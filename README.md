@@ -1,16 +1,119 @@
-# incidencias_app
+## Incidencias Ciudadanas – Aplicación Flutter + Supabase
+Aplicación web desarrollada en Flutter Web para la gestión de incidencias ciudadanas en el municipio de Cantillana.
+Permite a los ciudadanos registrar incidencias con fotos, geolocalización y dirección, mientras que el Ayuntamiento dispone de un panel de administración para gestionarlas.
 
-A new Flutter project.
+Proyecto desarrollado como parte del Checkpoint 2 del módulo de Desarrollo de Aplicaciones Multiplataforma (DAM).
 
-## Getting Started
+# Tecnologías utilizadas
+Flutter Web
 
-This project is a starting point for a Flutter application.
+Supabase (Auth, Database, Storage)
 
-A few resources to get you started if this is your first Flutter project:
+Google OAuth
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Google Maps + Places API
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Arquitectura Repository + Service
+
+Plesk (hosting)
+
+# Estructura del proyecto
+Código
+lib/
+ ├── models/
+ ├── services/
+ ├── repositories/
+ ├── screens/
+ ├── widgets/
+ └── main.dart
+deploy/        ← build web para despliegue en Plesk
+assets/
+# Modelo de datos
+Tabla profiles
+id (UUID, PK)
+
+email
+
+role (user/admin)
+
+Tabla incidencias
+id (UUID, PK)
+
+user_id (FK → profiles.id)
+
+titulo
+
+descripcion
+
+estado (pendiente, en_proceso, resuelta)
+
+latitud
+
+longitud
+
+direccion
+
+imagenes (array de strings)
+
+fecha
+
+# Autenticación
+Registro con email/contraseña
+
+Login con email/contraseña
+
+Login con Google OAuth
+
+Detección automática de sesión con onAuthStateChange
+
+Redirección según rol (admin/usuario)
+
+# Funcionalidades principales
+Usuario
+Crear incidencia con:
+
+Fotos múltiples
+
+Geolocalización
+
+Dirección mediante Google Places
+
+Ver sus incidencias
+
+Ver detalle con mapa
+
+Filtrar por estado
+
+Administrador
+Ver todas las incidencias
+
+Filtrar por estado
+
+Cambiar estado
+
+Ver detalle completo
+
+# Estado actual del proyecto (Checkpoint 2)
+Modelo de datos final implementado
+
+Autenticación funcional
+
+Roles funcionando
+
+CRUD de incidencias
+
+Geolocalización y Places integrados
+
+Panel admin en desarrollo
+
+# Despliegue
+https://alumno25.fpcantillana.org/
+
+
+# Cómo ejecutar el proyecto
+bash
+flutter pub get
+flutter run -d chrome
+# Autora
+Sonia González Almenara  
+DAM – Desarrollo de Aplicaciones Multiplataforma - IES Cantillana
