@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/incident.dart';
+import '../services/incident_service.dart';
 import '../widgets/incident_card.dart';
 import 'detail_incident_page.dart';
 import '../widgets/app_scaffold.dart';
+
+enum AdminSortOption {
+  fechaDesc,
+  direccionAsc,
+  direccionDesc,
+  estadoAsc,
+  estadoDesc,
+}
 
 class AdminIncidentListPage extends StatefulWidget {
   const AdminIncidentListPage({super.key});
@@ -17,6 +26,8 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
   bool loading = true;
   List<Incident> incidents = [];
   String filtroEstado = "todos";
+  AdminSortOption sortOption = AdminSortOption.fechaDesc;
+  final incidentService = IncidentService();
 
   @override
   void initState() {
@@ -33,19 +44,123 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
       data = await supabase
           .from('incidencias')
           .select('*')
-          .order('created_at', ascending: false);
+          .order('fecha', ascending: false);
     } else {
       data = await supabase
           .from('incidencias')
           .select('*')
           .eq('estado', filtroEstado)
-          .order('created_at', ascending: false);
+          .order('fecha', ascending: false);
     }
 
+    final loaded = (data as List).map((map) => Incident.fromMap(map)).toList();
+    _sortIncidents(loaded);
+
     setState(() {
-      incidents = (data as List).map((map) => Incident.fromMap(map)).toList();
+      incidents = loaded;
       loading = false;
     });
+  }
+
+  int _estadoOrder(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'pendiente':
+        return 0;
+      case 'en_proceso':
+        return 1;
+      case 'resuelta':
+        return 2;
+      default:
+        return 99;
+    }
+  }
+
+  void _sortIncidents(List<Incident> list) {
+    switch (sortOption) {
+      case AdminSortOption.fechaDesc:
+        list.sort((a, b) => b.fecha.compareTo(a.fecha));
+        break;
+      case AdminSortOption.direccionAsc:
+        list.sort(
+          (a, b) => (a.direccion ?? '').toLowerCase().compareTo(
+            (b.direccion ?? '').toLowerCase(),
+          ),
+        );
+        break;
+      case AdminSortOption.direccionDesc:
+        list.sort(
+          (a, b) => (b.direccion ?? '').toLowerCase().compareTo(
+            (a.direccion ?? '').toLowerCase(),
+          ),
+        );
+        break;
+      case AdminSortOption.estadoAsc:
+        list.sort(
+          (a, b) => _estadoOrder(a.estado).compareTo(_estadoOrder(b.estado)),
+        );
+        break;
+      case AdminSortOption.estadoDesc:
+        list.sort(
+          (a, b) => _estadoOrder(b.estado).compareTo(_estadoOrder(a.estado)),
+        );
+        break;
+    }
+  }
+
+  Future<void> _confirmDelete(Incident incident) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar incidencia'),
+        content: Text(
+          'Se eliminara la incidencia "${incident.titulo ?? 'Sin titulo'}". Esta accion no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final ok = await incidentService.deleteIncident(incident.id);
+    if (!mounted) return;
+
+    if (ok) {
+      setState(() {
+        incidents.removeWhere((i) => i.id == incident.id);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Incidencia eliminada')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo eliminar la incidencia')),
+      );
+    }
+  }
+
+  String _sortLabel(AdminSortOption option) {
+    switch (option) {
+      case AdminSortOption.fechaDesc:
+        return 'Fecha (mas reciente)';
+      case AdminSortOption.direccionAsc:
+        return 'Direccion (A-Z)';
+      case AdminSortOption.direccionDesc:
+        return 'Direccion (Z-A)';
+      case AdminSortOption.estadoAsc:
+        return 'Estado (Pendiente->Resuelta)';
+      case AdminSortOption.estadoDesc:
+        return 'Estado (Resuelta->Pendiente)';
+    }
   }
 
   Widget _buildFiltroChip(String estado, String label, Color color) {
@@ -54,7 +169,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     return ChoiceChip(
       label: Text(label),
       selected: activo,
-      selectedColor: color.withOpacity(0.2),
+      selectedColor: color.withValues(alpha: 0.2),
       onSelected: (_) {
         setState(() {
           filtroEstado = estado;
@@ -72,6 +187,43 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
       title: "Incidencias (Admin)",
       body: Column(
         children: [
+          const SizedBox(height: 10),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<AdminSortOption>(
+                  value: sortOption,
+                  isExpanded: true,
+                  icon: const Icon(Icons.sort),
+                  items: AdminSortOption.values
+                      .map(
+                        (option) => DropdownMenuItem(
+                          value: option,
+                          child: Text(_sortLabel(option)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      sortOption = value;
+                      _sortIncidents(incidents);
+                    });
+                  },
+                ),
+              ),
+            ),
+          ),
+
           const SizedBox(height: 10),
 
           // FILTROS
@@ -97,24 +249,46 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())
+                : incidents.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No hay incidencias para los filtros seleccionados',
+                    ),
+                  )
                 : ListView.builder(
                     itemCount: incidents.length,
                     itemBuilder: (context, index) {
                       final inc = incidents[index];
 
-                      return IncidentCard(
-                        incident: inc,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => IncidentDetailPage(
-                                incident: inc.toMap(),
-                                isAdmin: true,
+                      return Stack(
+                        children: [
+                          IncidentCard(
+                            incident: inc,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => IncidentDetailPage(
+                                    incident: inc.toMap(),
+                                    isAdmin: true,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: IconButton(
+                              tooltip: 'Eliminar incidencia',
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
                               ),
+                              onPressed: () => _confirmDelete(inc),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       );
                     },
                   ),

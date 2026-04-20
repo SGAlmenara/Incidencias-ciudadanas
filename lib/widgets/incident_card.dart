@@ -1,25 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/incident.dart';
+import 'status_badge.dart';
 
 class IncidentCard extends StatelessWidget {
   final Incident incident;
   final VoidCallback? onTap;
 
   const IncidentCard({super.key, required this.incident, this.onTap});
-
-  Color _estadoColor(String estado) {
-    switch (estado) {
-      case 'pendiente':
-        return const Color(0xFFE67E22); // naranja institucional
-      case 'en_proceso':
-        return const Color(0xFF2980B9); // azul institucional
-      case 'resuelta':
-        return const Color(0xFF27AE60); // verde institucional
-      default:
-        return Colors.grey;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +18,7 @@ class IncidentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -101,22 +89,13 @@ class IncidentCard extends StatelessWidget {
                     Row(
                       children: [
                         // ESTADO
-                        Container(
+                        StatusBadge(
+                          estado: incident.estado,
+                          fontSize: 11,
+                          iconSize: 13,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _estadoColor(incident.estado),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            incident.estado.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
+                            horizontal: 10,
+                            vertical: 5,
                           ),
                         ),
 

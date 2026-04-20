@@ -7,6 +7,7 @@ import 'package:geocoding/geocoding.dart';
 import '../widgets/app_scaffold.dart';
 import '../services/incident_service.dart';
 import 'place_search_page.dart';
+import '../widgets/back_fab.dart'; // IMPORTANTE
 
 class CreateIncidentPage extends StatefulWidget {
   const CreateIncidentPage({super.key});
@@ -101,7 +102,7 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
         place.locality,
         place.postalCode,
         place.country,
-      ].where((e) => e != null && e!.isNotEmpty).join(", ");
+      ].where((e) => e != null && e.isNotEmpty).join(", ");
 
       setState(() {
         direccionCtrl.text = direccion;
@@ -163,120 +164,127 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      title: "Crear incidencia",
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: tituloCtrl,
-              decoration: const InputDecoration(
-                labelText: "Título",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: descripcionCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: "Descripción",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: direccionCtrl,
-              readOnly: true,
-              decoration: const InputDecoration(
-                labelText: "Dirección",
-                border: OutlineInputBorder(),
-              ),
-              onTap: _abrirBuscadorDireccion,
-            ),
-            const SizedBox(height: 10),
-
-            ElevatedButton.icon(
-              icon: const Icon(Icons.my_location),
-              label: const Text("Usar mi ubicación actual"),
-              onPressed: _usarUbicacionActual,
-            ),
-
-            const SizedBox(height: 10),
-            Text("Latitud: ${lat?.toStringAsFixed(6) ?? '---'}"),
-            Text("Longitud: ${lng?.toStringAsFixed(6) ?? '---'}"),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton.icon(
-              icon: const Icon(Icons.image),
-              label: const Text("Agregar fotos"),
-              onPressed: _pickImages,
-            ),
-            const SizedBox(height: 10),
-
-            if (imagenes.isNotEmpty)
-              SizedBox(
-                height: 200,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: imagenes.map((img) {
-                    return Stack(
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(right: 12),
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.grey[200],
-                          ),
-                          clipBehavior: Clip.hardEdge,
-                          child: Image.memory(
-                            base64Decode(img),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: CircleAvatar(
-                            backgroundColor: Colors.black54,
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  imagenes.remove(img);
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+    return Stack(
+      children: [
+        AppScaffold(
+          title: "Crear incidencia",
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: tituloCtrl,
+                  decoration: const InputDecoration(
+                    labelText: "Título",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
 
-            const SizedBox(height: 30),
+                TextField(
+                  controller: descripcionCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: "Descripción",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                child: const Text("Crear incidencia"),
-                onPressed: _crearIncidencia,
-              ),
+                TextField(
+                  controller: direccionCtrl,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: "Dirección",
+                    border: OutlineInputBorder(),
+                  ),
+                  onTap: _abrirBuscadorDireccion,
+                ),
+                const SizedBox(height: 10),
+
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.my_location),
+                  label: const Text("Usar mi ubicación actual"),
+                  onPressed: _usarUbicacionActual,
+                ),
+
+                const SizedBox(height: 10),
+                Text("Latitud: ${lat?.toStringAsFixed(6) ?? '---'}"),
+                Text("Longitud: ${lng?.toStringAsFixed(6) ?? '---'}"),
+
+                const SizedBox(height: 20),
+
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.image),
+                  label: const Text("Agregar fotos"),
+                  onPressed: _pickImages,
+                ),
+                const SizedBox(height: 10),
+
+                if (imagenes.isNotEmpty)
+                  SizedBox(
+                    height: 200,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: imagenes.map((img) {
+                        return Stack(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(right: 12),
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.grey[200],
+                              ),
+                              clipBehavior: Clip.hardEdge,
+                              child: Image.memory(
+                                base64Decode(img),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: CircleAvatar(
+                                backgroundColor: Colors.black54,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      imagenes.remove(img);
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                const SizedBox(height: 30),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    child: const Text("Crear incidencia"),
+                    onPressed: _crearIncidencia,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+
+        // BOTÓN FLOTANTE ABAJO A LA IZQUIERDA
+        const Positioned(bottom: 20, left: 20, child: BackFAB()),
+      ],
     );
   }
 }

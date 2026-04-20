@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'register_page.dart';
+import 'role_gate.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,8 +24,16 @@ class _LoginPageState extends State<LoginPage> {
 
     if (result != null) {
       setState(() => errorMsg = result);
+      return;
     }
-    // NO navegamos aquí → lo hace main.dart automáticamente
+
+    if (!mounted) return;
+
+    // LOGIN OK → RoleGate decide destino según rol
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const RoleGate()),
+    );
   }
 
   Future<void> _loginGoogle() async {
@@ -32,84 +41,183 @@ class _LoginPageState extends State<LoginPage> {
 
     if (result != null) {
       setState(() => errorMsg = result);
+      return;
     }
-    // NO navegamos aquí → lo hace main.dart automáticamente
+
+    if (!mounted) return;
+
+    // LOGIN OK → RoleGate decide destino según rol
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const RoleGate()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                "Iniciar sesión",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+      backgroundColor: const Color(0xFFF8F9FA),
+
+      body: SafeArea(
+        child: Column(
+          children: [
+            // HEADER 
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Row(
+                children: [
+                  Image.asset(
+                    "assets/images/escudo_de_cantillana.png",
+                    height: 55,
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "AYUNTAMIENTO DE",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const Text(
+                        "Cantillana",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF2D3436),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
-              TextField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Correo electrónico",
-                  border: OutlineInputBorder(),
+            // CARD CENTRADA
+            Expanded(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(32),
+                  width: 400,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        blurRadius: 12,
+                        color: Colors.black12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Iniciar sesión",
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF003366),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      if (errorMsg != null)
+                        Text(
+                          errorMsg!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+
+                      TextField(
+                        controller: emailCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Correo electrónico",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      TextField(
+                        controller: passCtrl,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: "Contraseña",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _loginEmail,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF003366),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text("Entrar"),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          icon: Image.asset("assets/google.png", height: 24),
+                          label: const Text("Iniciar sesión con Google"),
+                          onPressed: _loginGoogle,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: const BorderSide(color: Colors.black54),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterPage(),
+                            ),
+                          );
+                        },
+                        child: const Text("¿No tienes cuenta? Regístrate"),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 20),
-
-              TextField(
-                controller: passCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Contraseña",
-                  border: OutlineInputBorder(),
+            // FOOTER
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Text(
+                "Copyright © 2026 Ayuntamiento de Cantillana",
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              if (errorMsg != null)
-                Text(errorMsg!, style: const TextStyle(color: Colors.red)),
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _loginEmail,
-                  child: const Text("Entrar"),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: Image.asset("assets/google.png", height: 24),
-                  label: const Text("Iniciar sesión con Google"),
-                  onPressed: _loginGoogle,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const RegisterPage()),
-                  );
-                },
-                child: const Text("¿No tienes cuenta? Regístrate"),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

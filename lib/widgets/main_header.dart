@@ -13,7 +13,7 @@ class MainHeader extends StatelessWidget implements PreferredSizeWidget {
       iconTheme: const IconThemeData(color: Colors.black87),
       title: Row(
         children: [
-          Image.asset("assets/images/escudo_de_ccantillana.png", height: 40),
+          Image.asset("assets/images/Escudo_de_Cantillana.png", height: 40),
           const SizedBox(width: 12),
           Text(
             title ?? "Cantillana",

@@ -11,7 +11,7 @@ class WelcomePage extends StatelessWidget {
       backgroundColor: const Color(0xFFF8F9FA),
       body: Stack(
         children: [
-          // 1. FONDO DEGRADADO
+          // FONDO DEGRADADO
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -24,7 +24,7 @@ class WelcomePage extends StatelessWidget {
             ),
           ),
 
-          // 2. IMAGEN DE FONDO CON MÁSCARA
+          // IMAGEN DE FONDO CON MÁSCARA
           Positioned.fill(
             child: ShaderMask(
               shaderCallback: (rect) {

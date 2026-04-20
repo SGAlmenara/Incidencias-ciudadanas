@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_incident_list_page.dart';
 import 'home_page.dart';
+import 'welcome_page.dart';
 
 class RoleGate extends StatefulWidget {
   const RoleGate({super.key});
@@ -25,7 +26,12 @@ class _RoleGateState extends State<RoleGate> {
     final user = supabase.auth.currentUser;
 
     if (user == null) {
-      Navigator.pushReplacementNamed(context, '/login');
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const WelcomePage()),
+        (route) => false,
+      );
       return;
     }
 

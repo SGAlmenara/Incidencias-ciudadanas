@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '/screens/home_page.dart';
+import '/screens/admin_incident_list_page.dart';
+import '/screens/welcome_page.dart';
 
 class MainDrawer extends StatelessWidget {
   final bool isAdmin;
@@ -20,23 +23,31 @@ class MainDrawer extends StatelessWidget {
             ),
           ),
 
-          // OPCIÓN USUARIO NORMAL
+          // SOLO PARA USUARIOS NORMALES
           if (!isAdmin)
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text("Mis incidencias"),
               onTap: () {
-                Navigator.pushReplacementNamed(context, '/home');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomePage()),
+                );
               },
             ),
 
-          // OPCIÓN ADMIN
+          // SOLO PARA ADMINISTRADORES
           if (isAdmin)
             ListTile(
               leading: const Icon(Icons.admin_panel_settings),
               title: const Text("Panel de administración"),
               onTap: () {
-                Navigator.pushReplacementNamed(context, '/admin');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminIncidentListPage(),
+                  ),
+                );
               },
             ),
 
@@ -48,7 +59,12 @@ class MainDrawer extends StatelessWidget {
             title: const Text("Cerrar sesión"),
             onTap: () async {
               await Supabase.instance.client.auth.signOut();
-              Navigator.pushReplacementNamed(context, '/login');
+              if (!context.mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const WelcomePage()),
+                (route) => false,
+              );
             },
           ),
         ],
