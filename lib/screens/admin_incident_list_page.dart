@@ -15,6 +15,8 @@ enum AdminSortOption {
   estadoDesc,
 }
 
+// PÁGINA PRINCIPAL ADMINISTRADORES: LISTADO DE TODAS LAS INCIDENCIAS CON FILTROS
+// Y OPCIONES DE EDICIÓN
 class AdminIncidentListPage extends StatefulWidget {
   const AdminIncidentListPage({super.key});
 
@@ -36,6 +38,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     _loadIncidents();
   }
 
+  // CARGAR INCIDENCIAS CON FILTRO DE ESTADO Y ORDEN SEGÚN OPCIÓN SELECCIONADA
   Future<void> _loadIncidents() async {
     final supabase = Supabase.instance.client;
 
@@ -76,6 +79,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
+  // MÉTODO PARA ACTUALIZAR EL ESTADO DE UNA INCIDENCIA
   Future<void> _updateIncidentStatus(
     Incident incident,
     String newStatus,
@@ -127,6 +131,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
+  // MÉTODO PARA OBTENER EL ORDEN DE LOS ESTADOS
   int _estadoOrder(String estado) {
     switch (estado.toLowerCase()) {
       case 'pendiente':
@@ -140,6 +145,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
+  // MÉTODO PARA ORDENAR LA LISTA DE INCIDENCIAS SEGÚN LA OPCIÓN SELECCIONADA
   void _sortIncidents(List<Incident> list) {
     switch (sortOption) {
       case AdminSortOption.fechaDesc:
@@ -172,6 +178,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
+  // MÉTODO PARA CONFIRMAR Y ELIMINAR UNA INCIDENCIA
   Future<void> _confirmDelete(Incident incident) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -213,6 +220,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
+  // MÉTODO PARA OBTENER LA ETIQUETA DE LOS CRITERIOS DE ORDENACIÓN
   String _sortLabel(AdminSortOption option) {
     switch (option) {
       case AdminSortOption.fechaDesc:
@@ -228,6 +236,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
+  // MÉTODO PARA OBTENER LA ETIQUETA DE LOS ESTADOS
   String _estadoLabel(String estado) {
     switch (estado) {
       case 'pendiente':
@@ -241,6 +250,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
+  // MÉTODO PARA CONSTRUIR LOS CHIPS DE FILTRO DE ESTADO
   Widget _buildFiltroChip(String estado, String label, Color color) {
     final activo = filtroEstado == estado;
 
@@ -258,6 +268,8 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     );
   }
 
+  // MÉTODO BUILD PARA MOSTRAR LA INTERFAZ DE LISTADO DE INCIDENCIAS CON FILTROS,
+  //OPCIONES DE ORDENACIÓN, Y BOTONES DE EDICIÓN Y ELIMINACIÓN
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
@@ -304,7 +316,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
 
           const SizedBox(height: 10),
 
-          // FILTROS
+          // FILTROS DE ESTADO
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -323,7 +335,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
 
           const SizedBox(height: 10),
 
-          // LISTA
+          // LISTA DE INCIDENCIAS
           Expanded(
             child: loading
                 ? const Center(child: CircularProgressIndicator())

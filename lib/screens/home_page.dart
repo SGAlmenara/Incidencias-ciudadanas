@@ -15,6 +15,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+// PÁGINA PRINCIPAL USUARIOS NORMALES: LISTADO DE SUS INCIDENCIAS
 class _HomePageState extends State<HomePage> {
   final supabase = Supabase.instance.client;
   final auth = AuthService();
@@ -24,6 +25,7 @@ class _HomePageState extends State<HomePage> {
   bool isAdmin = false;
   bool loadingRole = true;
 
+  // CARGAR ROL AL INICIAR PÁGINA
   @override
   void initState() {
     super.initState();
@@ -58,6 +60,7 @@ class _HomePageState extends State<HomePage> {
     return (response as List).map((map) => Incident.fromMap(map)).toList();
   }
 
+  // Widget para filtro de estado
   Widget _buildFiltro(String valor, String texto) {
     final activo = estadoFiltro == valor;
 
@@ -84,6 +87,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // OBTENER INCIDENCIA POR ID
   @override
   Widget build(BuildContext context) {
     if (loadingRole) {

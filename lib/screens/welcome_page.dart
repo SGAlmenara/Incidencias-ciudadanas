@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 
+// PÁGINA DE BIENVENIDA PARA USUARIOS NO AUTENTICADOS,
+//Y BOTÓN PRINCIPAL PARA INICIAR SESIÓN O REGISTRARSE
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 

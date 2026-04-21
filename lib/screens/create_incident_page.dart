@@ -9,6 +9,10 @@ import '../services/incident_service.dart';
 import 'place_search_page.dart';
 import '../widgets/back_fab.dart'; // IMPORTANTE
 
+// PÁGINA DE CREACIÓN DE INCIDENCIA: PERMITE A USUARIOS NORMALES
+//CREAR NUEVAS INCIDENCIAS CON TÍTULO, DESCRIPCIÓN, DIRECCIÓN
+//(CON BUSCADOR O USANDO UBICACIÓN ACTUAL) Y HASTA 3 FOTOS.
+//INCLUYE VALIDACIONES ANTES DE CREAR LA INCIDENCIA.
 class CreateIncidentPage extends StatefulWidget {
   const CreateIncidentPage({super.key});
 
@@ -27,6 +31,7 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
   List<String> imagenes = [];
   static const int maxFotos = 3;
 
+  // CARGAR ROL AL INICIAR PÁGINA
   Future<void> _pickImages() async {
     if (imagenes.length >= maxFotos) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,6 +59,8 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
     }
   }
 
+  // Método para abrir la página de búsqueda de direcciones usando Google Places API.
+  //Al seleccionar una dirección, se llenan los campos de dirección y coordenadas.
   Future<void> _abrirBuscadorDireccion() async {
     final result = await Navigator.push(
       context,
@@ -72,6 +79,8 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
     }
   }
 
+  // Método para usar la ubicación actual del dispositivo y convertirla en una dirección legible,
+  // llenando los campos correspondientes. Maneja permisos y errores.
   Future<void> _usarUbicacionActual() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -114,6 +123,8 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
     }
   }
 
+  // Método para validar los campos y crear la incidencia usando IncidentService.
+  //Muestra mensajes de error si faltan campos o si la ubicación es inválida.
   Future<void> _crearIncidencia() async {
     if (tituloCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(
@@ -162,6 +173,10 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
     }
   }
 
+  // Método build para mostrar la interfaz de creación de incidencia,
+  //con campos para título, descripción, dirección
+  //(con buscador y opción de usar ubicación actual) y agregar fotos.
+  // También incluye validaciones antes de crear la incidencia.
   @override
   Widget build(BuildContext context) {
     return Stack(

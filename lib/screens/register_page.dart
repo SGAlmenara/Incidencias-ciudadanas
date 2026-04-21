@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart';
 
+// PÁGINA DE REGISTRO: SIMILAR A LOGIN PERO CON VALIDACIÓNES DE CONTRASEÑA
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -16,6 +17,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final auth = AuthService();
   String? errorMsg;
 
+  // Método para crear una nueva cuenta utilizando el servicio de autenticación.
+  // Valida que las contraseñas coincidan antes de intentar registrarse.
+  //Si el registro es exitoso, se navega a la página de inicio de sesión;
+  //si ocurre un error, se muestra un mensaje.
   @override
   Widget build(BuildContext context) {
     return Scaffold(

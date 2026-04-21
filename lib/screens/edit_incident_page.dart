@@ -7,6 +7,9 @@ import 'place_search_page.dart';
 import '../widgets/app_scaffold.dart';
 import '../services/incident_service.dart';
 
+// PÁGINA DE EDICIÓN DE INCIDENCIA: PERMITE EDITAR TÍTULO, DESCRIPCIÓN, ESTADO, DIRECCIÓN Y FOTOS.
+// SI EL USUARIO ES ADMINISTRADOR, PUEDE EDITAR EL ESTADO; SI ES USUARIO NORMAL,
+//EL ESTADO NO SE MUESTRA NI SE PUEDE EDITAR.
 class EditIncidentPage extends StatefulWidget {
   final Map<String, dynamic> incident;
 
@@ -32,6 +35,8 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
   List<String> imagenesExistentes = [];
   static const int maxFotos = 3;
 
+  // Método para cargar el rol del usuario al iniciar la página,
+  // verificando si es administrador o no para mostrar u ocultar ciertas opciones de edición.
   @override
   void initState() {
     super.initState();
@@ -55,6 +60,7 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
     _loadUserRole();
   }
 
+  // Método para liberar los controladores de texto al cerrar la página, evitando fugas de memoria.
   @override
   void dispose() {
     tituloCtrl.dispose();
@@ -207,6 +213,9 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
     }
   }
 
+  //Metodo build para mostrar la interfaz de edición de la incidencia,
+  //con campos para título, descripción, estado, dirección y fotos.
+  //También incluye validaciones y manejo de imágenes.
   @override
   Widget build(BuildContext context) {
     if (loadingRole) {

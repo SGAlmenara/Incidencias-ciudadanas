@@ -29,13 +29,14 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
 
-    // LOGIN OK → RoleGate decide destino según rol
+    // LOGIN OK, RoleGate decide destino según rol
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const RoleGate()),
     );
   }
 
+  // Método para iniciar sesión con Google, utilizando el servicio de autenticación. Si ocurre un error, se muestra un mensaje; si el inicio de sesión es exitoso, se navega a la página RoleGate para redirigir según el rol del usuario.
   Future<void> _loginGoogle() async {
     final result = await auth.signInWithGoogle();
 
@@ -46,13 +47,17 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
 
-    // LOGIN OK → RoleGate decide destino según rol
+    // LOGIN OK, RoleGate decide destino según rol
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const RoleGate()),
     );
   }
 
+  // Método build para mostrar la interfaz de inicio de sesión,
+  //con campos para correo electrónico y contraseña,
+  //así como botones para iniciar sesión con email o Google.
+  //También incluye un enlace para registrarse si no se tiene una cuenta.
   @override
   Widget build(BuildContext context) {
     return Scaffold(

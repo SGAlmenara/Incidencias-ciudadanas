@@ -10,6 +10,7 @@ import '../services/incident_service.dart';
 import '../widgets/back_fab.dart';
 import '../widgets/status_badge.dart';
 
+// PÁGINA DE DETALLE DE INCIDENCIA (ACCESIBLE DESDE LIST_INCIDENT_PAGE Y ADMIN_INCIDENT_LIST_PAGE)
 class IncidentDetailPage extends StatelessWidget {
   final Map<String, dynamic> incident;
   final bool isAdmin;
@@ -20,6 +21,7 @@ class IncidentDetailPage extends StatelessWidget {
     required this.isAdmin,
   });
 
+  // MÉTODO PARA MOSTRAR IMAGEN AMPLIADA EN UNA NUEVA PANTALLA
   void _mostrarImagenAmpliada(BuildContext context, String base64img) {
     Navigator.push(
       context,
@@ -45,6 +47,7 @@ class IncidentDetailPage extends StatelessWidget {
     );
   }
 
+  // MÉTODO PARA CONFIRMAR ELIMINACIÓN DE INCIDENCIA
   Future<void> _confirmarEliminar(BuildContext context, String id) async {
     final bool? confirmar = await showDialog(
       context: context,
@@ -81,6 +84,7 @@ class IncidentDetailPage extends StatelessWidget {
     }
   }
 
+  // MÉTODO PARA CREAR CARDS DE INFORMACIÓN (UBICACIÓN, DESCRIPCIÓN, ETC.)
   @override
   Widget build(BuildContext context) {
     final inc = Incident.fromMap(incident);
@@ -351,6 +355,7 @@ class IncidentDetailPage extends StatelessWidget {
     );
   }
 
+  // MÉTODO PARA CREAR BOTONES DE ACCIÓN (VER EN MAPA, EDITAR, ELIMINAR)
   Widget _buildActionButtons(BuildContext context, Incident inc) {
     return Column(
       children: [
@@ -435,6 +440,8 @@ class IncidentDetailPage extends StatelessWidget {
     );
   }
 
+  // MÉTODO PARA CREAR CARD PRINCIPAL CON INFORMACIÓN DESTACADA
+  //(TÍTULO, ESTADO, FECHA, BOTÓN DE EDICIÓN)
   Widget _buildIncidentReportedCard(BuildContext context, Incident inc) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -522,6 +529,8 @@ class IncidentDetailPage extends StatelessWidget {
     );
   }
 
+  // MÉTODO PARA FORMATEAR FECHA DE CREACIÓN DE LA INCIDENCIA
+  //(HOY, AYER, HACE X DÍAS, O FECHA COMPLETA)
   String _formatFecha(DateTime fecha) {
     final now = DateTime.now();
     final difference = now.difference(fecha);
