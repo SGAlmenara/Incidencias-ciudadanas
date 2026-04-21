@@ -25,6 +25,7 @@ class AdminIncidentListPage extends StatefulWidget {
 class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
   bool loading = true;
   List<Incident> incidents = [];
+  final Set<String> updatingStatusIds = <String>{};
   String filtroEstado = "todos";
   AdminSortOption sortOption = AdminSortOption.fechaDesc;
   final incidentService = IncidentService();
@@ -38,28 +39,92 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
   Future<void> _loadIncidents() async {
     final supabase = Supabase.instance.client;
 
-    dynamic data;
+    try {
+      dynamic data;
 
-    if (filtroEstado == "todos") {
-      data = await supabase
-          .from('incidencias')
-          .select('*')
-          .order('fecha', ascending: false);
-    } else {
-      data = await supabase
-          .from('incidencias')
-          .select('*')
-          .eq('estado', filtroEstado)
-          .order('fecha', ascending: false);
+      if (filtroEstado == "todos") {
+        data = await supabase
+            .from('incidencias')
+            .select('*')
+            .order('fecha', ascending: false);
+      } else {
+        data = await supabase
+            .from('incidencias')
+            .select('*')
+            .eq('estado', filtroEstado)
+            .order('fecha', ascending: false);
+      }
+
+      final loaded = (data as List)
+          .map((map) => Incident.fromMap(map))
+          .toList();
+      _sortIncidents(loaded);
+
+      if (!mounted) return;
+      setState(() {
+        incidents = loaded;
+        loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error cargando incidencias: $e')));
+    }
+  }
+
+  Future<void> _updateIncidentStatus(
+    Incident incident,
+    String newStatus,
+  ) async {
+    if (incident.estado == newStatus ||
+        updatingStatusIds.contains(incident.id)) {
+      return;
     }
 
-    final loaded = (data as List).map((map) => Incident.fromMap(map)).toList();
-    _sortIncidents(loaded);
-
     setState(() {
-      incidents = loaded;
-      loading = false;
+      updatingStatusIds.add(incident.id);
     });
+
+    try {
+      await incidentService.updateIncidentStatus(
+        id: incident.id,
+        estado: newStatus,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        final index = incidents.indexWhere((i) => i.id == incident.id);
+        if (index != -1) {
+          incidents[index] = incidents[index].copyWith(estado: newStatus);
+        }
+
+        if (filtroEstado != 'todos') {
+          incidents.removeWhere(
+            (i) => i.id == incident.id && i.estado != filtroEstado,
+          );
+        }
+
+        _sortIncidents(incidents);
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Estado actualizado')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo actualizar estado: $e')),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        updatingStatusIds.remove(incident.id);
+      });
+    }
   }
 
   int _estadoOrder(String estado) {
@@ -160,6 +225,19 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
         return 'Estado (Pendiente->Resuelta)';
       case AdminSortOption.estadoDesc:
         return 'Estado (Resuelta->Pendiente)';
+    }
+  }
+
+  String _estadoLabel(String estado) {
+    switch (estado) {
+      case 'pendiente':
+        return 'Pendiente';
+      case 'en_proceso':
+        return 'En proceso';
+      case 'resuelta':
+        return 'Resuelta';
+      default:
+        return estado;
     }
   }
 
@@ -286,6 +364,57 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                                 color: Colors.red,
                               ),
                               onPressed: () => _confirmDelete(inc),
+                            ),
+                          ),
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: inc.estado,
+                                  isDense: true,
+                                  onChanged: updatingStatusIds.contains(inc.id)
+                                      ? null
+                                      : (value) {
+                                          if (value == null) return;
+                                          _updateIncidentStatus(inc, value);
+                                        },
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'pendiente',
+                                      child: Text('Pendiente'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'en_proceso',
+                                      child: Text('En proceso'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'resuelta',
+                                      child: Text('Resuelta'),
+                                    ),
+                                  ],
+                                  selectedItemBuilder: (context) =>
+                                      ['pendiente', 'en_proceso', 'resuelta']
+                                          .map(
+                                            (estado) => Text(
+                                              _estadoLabel(estado),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                ),
+                              ),
                             ),
                           ),
                         ],

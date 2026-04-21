@@ -1,7 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final supabase = Supabase.instance.client;
+
+  String _safeAuthErrorMessage(Object error, {required String fallback}) {
+    if (error is AuthException && error.message.trim().isNotEmpty) {
+      return error.message;
+    }
+    return fallback;
+  }
 
   // Registro con email
   Future<String?> signUp(String email, String password) async {
@@ -13,7 +21,11 @@ class AuthService {
       if (response.user != null) return null;
       return "No se pudo crear la cuenta.";
     } catch (e) {
-      return e.toString();
+      debugPrint('signUp error: $e');
+      return _safeAuthErrorMessage(
+        e,
+        fallback: 'No se pudo crear la cuenta. Intentalo de nuevo.',
+      );
     }
   }
 
@@ -23,23 +35,34 @@ class AuthService {
       await supabase.auth.signInWithPassword(email: email, password: password);
       return null;
     } catch (e) {
-      return e.toString();
+      debugPrint('signIn error: $e');
+      return _safeAuthErrorMessage(
+        e,
+        fallback: 'No se pudo iniciar sesion. Revisa tus credenciales.',
+      );
     }
   }
 
   // Login con Google
   Future<String?> signInWithGoogle() async {
     try {
-      final origin = Uri.base.origin;
+      final redirectTo = kIsWeb
+          ? Uri.base.origin
+          : 'com.example.incidencias_app://login-callback/';
 
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: origin,
+        redirectTo: redirectTo,
+        authScreenLaunchMode: LaunchMode.externalApplication,
       );
 
       return null;
     } catch (e) {
-      return e.toString();
+      debugPrint('signInWithGoogle error: $e');
+      return _safeAuthErrorMessage(
+        e,
+        fallback: 'No se pudo iniciar sesion con Google. Intentalo de nuevo.',
+      );
     }
   }
 

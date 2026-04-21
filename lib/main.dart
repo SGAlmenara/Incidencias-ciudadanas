@@ -26,7 +26,9 @@ class MyApp extends StatelessWidget {
       home: StreamBuilder<AuthState>(
         stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (context, snapshot) {
-          final session = snapshot.data?.session;
+          final session =
+              snapshot.data?.session ??
+              Supabase.instance.client.auth.currentSession;
 
           // Si NO hay sesión → WelcomePage
           if (session == null) {

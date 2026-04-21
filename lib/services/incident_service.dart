@@ -121,6 +121,21 @@ class IncidentService {
     }
   }
 
+  Future<void> updateIncidentStatus({
+    required String id,
+    required String estado,
+  }) async {
+    try {
+      await supabase
+          .from('incidencias')
+          .update({'estado': estado})
+          .eq('id', id);
+    } catch (e) {
+      print("Error en updateIncidentStatus: $e");
+      throw Exception("No se pudo actualizar el estado");
+    }
+  }
+
   // ELIMINAR INCIDENCIA
   Future<bool> deleteIncident(String id) async {
     try {
