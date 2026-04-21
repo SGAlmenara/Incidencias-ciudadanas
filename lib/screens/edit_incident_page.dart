@@ -55,14 +55,33 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
     _loadUserRole();
   }
 
+  @override
+  void dispose() {
+    tituloCtrl.dispose();
+    descripcionCtrl.dispose();
+    latCtrl.dispose();
+    lngCtrl.dispose();
+    calleCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadUserRole() async {
     final supabase = Supabase.instance.client;
-    final userId = supabase.auth.currentUser!.id;
+    final currentUser = supabase.auth.currentUser;
+
+    if (currentUser == null) {
+      if (!mounted) return;
+      setState(() {
+        loadingRole = false;
+        isAdmin = false;
+      });
+      return;
+    }
 
     final data = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', userId)
+        .eq('id', currentUser.id)
         .maybeSingle();
 
     setState(() {
@@ -143,6 +162,16 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
       return;
     }
 
+    final lat = double.tryParse(latCtrl.text);
+    final lng = double.tryParse(lngCtrl.text);
+
+    if (lat == null || lng == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Ubicación inválida")));
+      return;
+    }
+
     try {
       ScaffoldMessenger.of(
         context,
@@ -157,8 +186,8 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
         titulo: tituloCtrl.text,
         descripcion: descripcionCtrl.text,
         estado: estadoFinal,
-        lat: double.parse(latCtrl.text),
-        lng: double.parse(lngCtrl.text),
+        lat: lat,
+        lng: lng,
         direccion: calleCtrl.text,
         imagenes: imagenesFinales,
       );
@@ -247,6 +276,17 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
                   ),
                 ),
               ],
+            ),
+
+            const SizedBox(height: 20),
+
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: _pickImages,
+                icon: const Icon(Icons.image),
+                label: const Text("Agregar fotos"),
+              ),
             ),
 
             const SizedBox(height: 20),
