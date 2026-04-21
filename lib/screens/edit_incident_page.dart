@@ -330,16 +330,12 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
 
             const SizedBox(height: 20),
 
-            ElevatedButton.icon(
-              onPressed: _pickImages,
-              icon: const Icon(Icons.image),
-              label: const Text("Agregar fotos"),
-            ),
-            const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: _guardarCambios,
-              child: const Text("Guardar cambios"),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: const Text("Editar incidencia"),
             ),
           ],
         ),

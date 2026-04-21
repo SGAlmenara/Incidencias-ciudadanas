@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/incident.dart';
 import '../widgets/incident_card.dart';
 import '../screens/create_incident_page.dart';
-import 'detail_incident_page.dart';
+import 'list_incident_page.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_scaffold.dart';
 
@@ -130,8 +130,8 @@ class _HomePageState extends State<HomePage> {
 
                     return IncidentCard(
                       incident: inc,
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final changed = await Navigator.push<bool>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => IncidentDetailPage(
@@ -140,6 +140,10 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                         );
+
+                        if (changed == true && mounted) {
+                          setState(() {});
+                        }
                       },
                     );
                   },
@@ -151,11 +155,15 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final created = await Navigator.push<bool>(
             context,
             MaterialPageRoute(builder: (_) => const CreateIncidentPage()),
           );
+
+          if (created == true && mounted) {
+            setState(() {});
+          }
         },
       ),
     );

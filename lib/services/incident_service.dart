@@ -139,8 +139,13 @@ class IncidentService {
   // ELIMINAR INCIDENCIA
   Future<bool> deleteIncident(String id) async {
     try {
-      await supabase.from('incidencias').delete().eq('id', id);
-      return true;
+      final deleted = await supabase
+          .from('incidencias')
+          .delete()
+          .eq('id', id)
+          .select('id');
+
+      return (deleted as List).isNotEmpty;
     } catch (e) {
       print("Error en deleteIncident: $e");
       return false;

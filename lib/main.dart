@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
               snapshot.data?.session ??
               Supabase.instance.client.auth.currentSession;
 
-          // Si NO hay sesión → WelcomePage
+          // Si NO hay sesión WelcomePage
           if (session == null) {
             return const WelcomePage();
           }

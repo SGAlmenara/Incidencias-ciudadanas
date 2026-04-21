@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '/screens/home_page.dart';
 import '/screens/admin_incident_list_page.dart';
+import '/screens/create_incident_page.dart';
 import '/screens/welcome_page.dart';
 
 class MainDrawer extends StatelessWidget {
@@ -32,6 +33,19 @@ class MainDrawer extends StatelessWidget {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (_) => const HomePage()),
+                );
+              },
+            ),
+
+          if (!isAdmin)
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline),
+              title: const Text("Nueva incidencia"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateIncidentPage()),
                 );
               },
             ),

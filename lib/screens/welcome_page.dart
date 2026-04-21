@@ -57,7 +57,7 @@ class WelcomePage extends StatelessWidget {
                       Hero(
                         tag: 'logo_ayto',
                         child: Image.asset(
-                          "assets/images/escudo_de_cantillana.png",
+                          "assets/images/Escudo_de_Cantillana.png",
                           height: 55,
                         ),
                       ),
@@ -91,7 +91,7 @@ class WelcomePage extends StatelessWidget {
 
                 const Spacer(),
 
-                // CARD GLASSMORPHISM (OPTIMIZADA)
+                // CARD GLASSMORPHISM
                 Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
@@ -111,7 +111,7 @@ class WelcomePage extends StatelessWidget {
                                 201,
                                 248,
                                 217,
-                              ).withOpacity(0.50),
+                              ).withOpacity(0.38),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
                                 color: Colors.white.withOpacity(0.50),

@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/incident.dart';
 import '../services/incident_service.dart';
 import '../widgets/incident_card.dart';
-import 'detail_incident_page.dart';
+import 'list_incident_page.dart';
 import '../widgets/app_scaffold.dart';
 
 enum AdminSortOption {
@@ -342,8 +342,8 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                         children: [
                           IncidentCard(
                             incident: inc,
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              final changed = await Navigator.push<bool>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => IncidentDetailPage(
@@ -352,6 +352,13 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                                   ),
                                 ),
                               );
+
+                              if (changed == true && mounted) {
+                                setState(() {
+                                  loading = true;
+                                });
+                                _loadIncidents();
+                              }
                             },
                           ),
                           Positioned(

@@ -61,13 +61,13 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // HEADER 
+            // HEADER
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
                 children: [
                   Image.asset(
-                    "assets/images/escudo_de_cantillana.png",
+                    "assets/images/Escudo_de_Cantillana.png",
                     height: 55,
                   ),
                   const SizedBox(width: 16),
