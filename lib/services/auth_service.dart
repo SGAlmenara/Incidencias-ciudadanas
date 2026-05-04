@@ -4,6 +4,65 @@ import 'package:flutter/foundation.dart';
 class AuthService {
   final supabase = Supabase.instance.client;
 
+  Future<void> ensureCurrentUserProfile({
+    String? nombre,
+    String? apellidos,
+    String? telefono,
+    String? email,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    final metadata = user.userMetadata ?? const <String, dynamic>{};
+    final existing = await supabase
+        .from('profiles')
+        .select('id, email, nombre, apellidos, telefono')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    String firstNonEmpty(List<String?> values) {
+      for (final value in values) {
+        final normalized = (value ?? '').trim();
+        if (normalized.isNotEmpty) return normalized;
+      }
+      return '';
+    }
+
+    final normalizedEmail = firstNonEmpty([
+      email,
+      user.email,
+      existing?['email']?.toString(),
+    ]).toLowerCase();
+
+    final firstName = firstNonEmpty([
+      nombre,
+      metadata['nombre']?.toString(),
+      metadata['name']?.toString(),
+      existing?['nombre']?.toString(),
+    ]);
+
+    final lastName = firstNonEmpty([
+      apellidos,
+      metadata['apellidos']?.toString(),
+      existing?['apellidos']?.toString(),
+    ]);
+
+    final phone = firstNonEmpty([
+      telefono,
+      metadata['telefono']?.toString(),
+      user.phone,
+      existing?['telefono']?.toString(),
+    ]);
+
+    final payload = <String, dynamic>{'id': user.id};
+    if (normalizedEmail.isNotEmpty) payload['email'] = normalizedEmail;
+    if (firstName.isNotEmpty) payload['nombre'] = firstName;
+    if (lastName.isNotEmpty) payload['apellidos'] = lastName;
+    if (phone.isNotEmpty) payload['telefono'] = phone;
+
+    await supabase.from('profiles').upsert(payload);
+  }
+
   String _safeAuthErrorMessage(Object error, {required String fallback}) {
     if (error is AuthException && error.message.trim().isNotEmpty) {
       return error.message;
@@ -12,13 +71,39 @@ class AuthService {
   }
 
   // Registro con email
-  Future<String?> signUp(String email, String password) async {
+  Future<String?> signUp({
+    required String email,
+    required String password,
+    required String nombre,
+    required String apellidos,
+    String? telefono,
+  }) async {
     try {
+      final normalizedEmail = email.trim().toLowerCase();
+
       final response = await supabase.auth.signUp(
-        email: email,
+        email: normalizedEmail,
         password: password,
+        data: {'nombre': nombre, 'apellidos': apellidos, 'telefono': telefono},
       );
-      if (response.user != null) return null;
+
+      final user = response.user;
+
+      if (user != null) {
+        try {
+          await ensureCurrentUserProfile(
+            email: normalizedEmail,
+            nombre: nombre,
+            apellidos: apellidos,
+            telefono: telefono,
+          );
+        } catch (profileError) {
+          debugPrint('Profile upsert error: $profileError');
+          return 'No se pudo completar el perfil del usuario.';
+        }
+
+        return null;
+      }
       return "No se pudo crear la cuenta.";
     } catch (e) {
       debugPrint('signUp error: $e');
@@ -32,7 +117,19 @@ class AuthService {
   // Login con email
   Future<String?> signIn(String email, String password) async {
     try {
-      await supabase.auth.signInWithPassword(email: email, password: password);
+      final normalizedEmail = email.trim().toLowerCase();
+
+      await supabase.auth.signInWithPassword(
+        email: normalizedEmail,
+        password: password,
+      );
+
+      try {
+        await ensureCurrentUserProfile(email: normalizedEmail);
+      } catch (profileError) {
+        debugPrint('Profile sync on signIn error: $profileError');
+      }
+
       return null;
     } catch (e) {
       debugPrint('signIn error: $e');
@@ -76,6 +173,12 @@ class AuthService {
     final userId = supabase.auth.currentUser?.id;
 
     if (userId == null) return false;
+
+    try {
+      await ensureCurrentUserProfile();
+    } catch (e) {
+      debugPrint('ensureCurrentUserProfile in isAdmin error: $e');
+    }
 
     final data = await supabase
         .from('profiles')

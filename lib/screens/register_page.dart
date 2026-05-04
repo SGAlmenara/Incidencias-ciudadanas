@@ -11,16 +11,31 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final nombreCtrl = TextEditingController();
+  final apellidosCtrl = TextEditingController();
+  final telefonoCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
   final pass2Ctrl = TextEditingController();
   final auth = AuthService();
   String? errorMsg;
+  bool registrationSuccess = false;
 
   // Método para crear una nueva cuenta utilizando el servicio de autenticación.
   // Valida que las contraseñas coincidan antes de intentar registrarse.
   //Si el registro es exitoso, se navega a la página de inicio de sesión;
   //si ocurre un error, se muestra un mensaje.
+  @override
+  void dispose() {
+    nombreCtrl.dispose();
+    apellidosCtrl.dispose();
+    telefonoCtrl.dispose();
+    emailCtrl.dispose();
+    passCtrl.dispose();
+    pass2Ctrl.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,105 +101,221 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ],
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          "Crear cuenta",
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF003366),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        if (errorMsg != null)
-                          Text(
-                            errorMsg!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-
-                        TextField(
-                          controller: emailCtrl,
-                          decoration: const InputDecoration(
-                            labelText: "Correo electrónico",
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        TextField(
-                          controller: passCtrl,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: "Contraseña",
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        TextField(
-                          controller: pass2Ctrl,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: "Repetir contraseña",
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              if (passCtrl.text != pass2Ctrl.text) {
-                                setState(
-                                  () =>
-                                      errorMsg = "Las contraseñas no coinciden",
-                                );
-                                return;
-                              }
-
-                              final error = await auth.signUp(
-                                emailCtrl.text.trim(),
-                                passCtrl.text.trim(),
-                              );
-
-                              if (error == null && mounted) {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const LoginPage(),
+                    child: registrationSuccess
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.mark_email_read_outlined,
+                                size: 64,
+                                color: Color(0xFF003366),
+                              ),
+                              const SizedBox(height: 20),
+                              const Text(
+                                "Revisa tu correo",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF003366),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                "Te hemos enviado un enlace de confirmación. Debes verificar tu correo antes de poder iniciar sesión.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Color(0xFF2D3436),
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LoginPage(),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF003366),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                   ),
-                                );
-                              } else {
-                                setState(() => errorMsg = error);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF003366),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: const Text("Crear cuenta"),
+                                  child: const Text("Ir al login"),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                "Crear cuenta",
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF003366),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              if (errorMsg != null)
+                                Text(
+                                  errorMsg!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+
+                              TextField(
+                                controller: nombreCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: "Nombre",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              TextField(
+                                controller: apellidosCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: "Apellidos",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              TextField(
+                                controller: telefonoCtrl,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(
+                                  labelText: "Teléfono (opcional)",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                              TextField(
+                                controller: emailCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: "Correo electrónico",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              TextField(
+                                controller: passCtrl,
+                                obscureText: true,
+                                decoration: const InputDecoration(
+                                  labelText: "Contraseña",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              TextField(
+                                controller: pass2Ctrl,
+                                obscureText: true,
+                                decoration: const InputDecoration(
+                                  labelText: "Repetir contraseña",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    if (nombreCtrl.text.trim().isEmpty) {
+                                      setState(
+                                        () => errorMsg =
+                                            "El nombre es obligatorio",
+                                      );
+                                      return;
+                                    }
+
+                                    if (apellidosCtrl.text.trim().isEmpty) {
+                                      setState(
+                                        () => errorMsg =
+                                            "Los apellidos son obligatorios",
+                                      );
+                                      return;
+                                    }
+
+                                    if (emailCtrl.text.trim().isEmpty) {
+                                      setState(
+                                        () => errorMsg =
+                                            "El correo es obligatorio",
+                                      );
+                                      return;
+                                    }
+
+                                    if (passCtrl.text.trim().isEmpty) {
+                                      setState(
+                                        () => errorMsg =
+                                            "La contraseña es obligatoria",
+                                      );
+                                      return;
+                                    }
+
+                                    if (passCtrl.text != pass2Ctrl.text) {
+                                      setState(
+                                        () => errorMsg =
+                                            "Las contraseñas no coinciden",
+                                      );
+                                      return;
+                                    }
+
+                                    final error = await auth.signUp(
+                                      email: emailCtrl.text.trim(),
+                                      password: passCtrl.text.trim(),
+                                      nombre: nombreCtrl.text.trim(),
+                                      apellidos: apellidosCtrl.text.trim(),
+                                      telefono: telefonoCtrl.text.trim().isEmpty
+                                          ? null
+                                          : telefonoCtrl.text.trim(),
+                                    );
+
+                                    if (error == null && mounted) {
+                                      setState(
+                                        () => registrationSuccess = true,
+                                      );
+                                    } else {
+                                      setState(() => errorMsg = error);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF003366),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                  child: const Text("Crear cuenta"),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Volver al login"),
+                              ),
+                            ],
                           ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: const Text("Volver al login"),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ),

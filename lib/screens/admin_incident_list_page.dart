@@ -27,6 +27,9 @@ class AdminIncidentListPage extends StatefulWidget {
 class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
   bool loading = true;
   List<Incident> incidents = [];
+  Map<String, String> latestCommentsByIncidentId = {};
+  Map<String, int> commentCountByIncidentId = {};
+  Map<String, String> reporterNameByUserId = {};
   final Set<String> updatingStatusIds = <String>{};
   String filtroEstado = "todos";
   AdminSortOption sortOption = AdminSortOption.fechaDesc;
@@ -63,9 +66,49 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
           .toList();
       _sortIncidents(loaded);
 
+      final userIds = loaded
+          .map((incident) => incident.userId)
+          .toSet()
+          .toList();
+      final reporterMap = <String, String>{};
+      if (userIds.isNotEmpty) {
+        final profileRows = await supabase
+            .from('profiles')
+            .select('id, nombre, apellidos, email')
+            .inFilter('id', userIds);
+
+        for (final row in (profileRows as List).cast<Map<String, dynamic>>()) {
+          final userId = (row['id'] ?? '').toString();
+          if (userId.isEmpty) continue;
+
+          final nombre = (row['nombre'] ?? '').toString().trim();
+          final apellidos = (row['apellidos'] ?? '').toString().trim();
+          final email = (row['email'] ?? '').toString().trim();
+          final fullName = [
+            nombre,
+            apellidos,
+          ].where((part) => part.isNotEmpty).join(' ').trim();
+
+          final displayName = fullName.isNotEmpty
+              ? fullName
+              : (email.isNotEmpty ? email : 'Usuario');
+          reporterMap[userId] = displayName;
+        }
+      }
+
+      final incidentIds = loaded.map((incident) => incident.id).toList();
+      final latestComments = await incidentService
+          .getLatestCommentPreviewByIncidentIds(incidentIds);
+      final commentCounts = await incidentService.getCommentCountByIncidentIds(
+        incidentIds,
+      );
+
       if (!mounted) return;
       setState(() {
         incidents = loaded;
+        latestCommentsByIncidentId = latestComments;
+        commentCountByIncidentId = commentCounts;
+        reporterNameByUserId = reporterMap;
         loading = false;
       });
     } catch (e) {
@@ -209,6 +252,8 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     if (ok) {
       setState(() {
         incidents.removeWhere((i) => i.id == incident.id);
+        latestCommentsByIncidentId.remove(incident.id);
+        commentCountByIncidentId.remove(incident.id);
       });
       ScaffoldMessenger.of(
         context,
@@ -354,6 +399,10 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                         children: [
                           IncidentCard(
                             incident: inc,
+                            isAlternate: index.isEven,
+                            reporterName: reporterNameByUserId[inc.userId],
+                            latestComment: latestCommentsByIncidentId[inc.id],
+                            commentCount: commentCountByIncidentId[inc.id] ?? 0,
                             onTap: () async {
                               final changed = await Navigator.push<bool>(
                                 context,

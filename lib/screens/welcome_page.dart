@@ -126,18 +126,15 @@ class WelcomePage extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color.fromARGB(
-                                      255,
-                                      23,
-                                      118,
-                                      250,
-                                    ).withOpacity(0.12),
+                                    color: const Color(
+                                      0xFFA8D5B5,
+                                    ).withOpacity(0.4),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
                                     Icons.campaign_rounded,
                                     size: 36,
-                                    color: Color.fromARGB(255, 23, 118, 250),
+                                    color: Color(0xFFE57373),
                                   ),
                                 ),
 
@@ -184,7 +181,7 @@ class WelcomePage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 24),
                   child: Text(
-                    "Copyright © 2026 Ayuntamiento de Cantillana, todos los derechos reservados",
+                    "Copyright © 2026 Ayuntamiento de Cantillana",
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 11,
@@ -200,6 +197,9 @@ class WelcomePage extends StatelessWidget {
     );
   }
 
+  // Método para construir el botón principal que redirige a la página de inicio de sesión.
+  // El botón tiene un estilo personalizado con colores, padding, bordes redondeados
+  // y sombra para mejorar su apariencia.
   Widget _buildMainButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,

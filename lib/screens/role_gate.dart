@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'admin_incident_list_page.dart';
-import 'home_page.dart';
+import 'admin_home_page.dart';
+import 'user_home_page.dart';
 import 'welcome_page.dart';
 
 // PÁGINA INTERMEDIA PARA REDIRIGIR SEGÚN ROL
@@ -68,9 +68,9 @@ class _RoleGateState extends State<RoleGate> {
     }
 
     if (isAdmin) {
-      return const AdminIncidentListPage();
+      return const AdminHomePage();
     }
 
-    return const HomePage();
+    return const UserHomePage();
   }
 }

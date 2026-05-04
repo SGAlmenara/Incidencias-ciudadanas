@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/welcome_page.dart';
-import 'screens/home_page.dart';
-import 'screens/admin_incident_list_page.dart';
+import 'screens/user_home_page.dart';
+import 'screens/admin_home_page.dart';
+import 'screens/reset_password_page.dart';
 import 'services/auth_service.dart';
 
 void main() async {
@@ -26,6 +27,17 @@ class MyApp extends StatelessWidget {
       home: StreamBuilder<AuthState>(
         stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (context, snapshot) {
+          final fragmentParams = Uri.splitQueryString(Uri.base.fragment);
+          final isRecoveryLink =
+              fragmentParams['type'] == 'recovery' &&
+              (fragmentParams['access_token'] ?? '').isNotEmpty;
+          final isRecoveryEvent =
+              snapshot.data?.event == AuthChangeEvent.passwordRecovery;
+
+          if (isRecoveryLink || isRecoveryEvent) {
+            return const ResetPasswordPage();
+          }
+
           final session =
               snapshot.data?.session ??
               Supabase.instance.client.auth.currentSession;
@@ -46,7 +58,7 @@ class MyApp extends StatelessWidget {
               }
 
               final esAdmin = snap.data!;
-              return esAdmin ? const AdminIncidentListPage() : const HomePage();
+              return esAdmin ? const AdminHomePage() : const UserHomePage();
             },
           );
         },

@@ -7,6 +7,7 @@ class AppScaffold extends StatelessWidget {
   final Widget body;
   final List<Widget>? actions;
   final String? title;
+  final String? subtitle;
   final bool isAdmin;
   final Widget? floatingActionButton;
 
@@ -15,6 +16,7 @@ class AppScaffold extends StatelessWidget {
     required this.body,
     this.actions,
     this.title,
+    this.subtitle,
     this.isAdmin = false,
     this.floatingActionButton,
   });
@@ -22,7 +24,7 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MainHeader(title: title),
+      appBar: MainHeader(title: title, subtitle: subtitle),
       drawer: MainDrawer(isAdmin: isAdmin),
       body: body,
       floatingActionButton: floatingActionButton,

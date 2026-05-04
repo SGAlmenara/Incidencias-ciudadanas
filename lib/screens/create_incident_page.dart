@@ -85,6 +85,7 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Activa la ubicación del dispositivo")),
         );
@@ -94,29 +95,77 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Debes conceder permiso de ubicación"),
+            ),
+          );
+          return;
+        }
       }
-      if (permission == LocationPermission.deniedForever) return;
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Permiso de ubicación bloqueado. Habilítalo en la configuración del navegador/dispositivo.",
+            ),
+          ),
+        );
+        return;
+      }
 
-      final pos = await Geolocator.getCurrentPosition();
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
 
-      lat = pos.latitude;
-      lng = pos.longitude;
+      final latValue = pos.latitude;
+      final lngValue = pos.longitude;
 
-      final placemarks = await placemarkFromCoordinates(lat!, lng!);
-      final place = placemarks.first;
+      if (!mounted) return;
+      setState(() {
+        lat = latValue;
+        lng = lngValue;
+      });
 
-      final direccion = [
-        place.street?.isNotEmpty == true ? place.street : place.thoroughfare,
-        place.locality,
-        place.postalCode,
-        place.country,
-      ].where((e) => e != null && e.isNotEmpty).join(", ");
+      var direccion =
+          "${latValue.toStringAsFixed(6)}, ${lngValue.toStringAsFixed(6)}";
 
+      try {
+        final placemarks = await placemarkFromCoordinates(latValue, lngValue);
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+
+          final parsedDireccion = [
+            place.street?.isNotEmpty == true
+                ? place.street
+                : place.thoroughfare,
+            place.locality,
+            place.postalCode,
+            place.country,
+          ].where((e) => e != null && e.isNotEmpty).join(", ");
+
+          if (parsedDireccion.isNotEmpty) {
+            direccion = parsedDireccion;
+          }
+        }
+      } catch (_) {
+        // En web, la geocodificación inversa puede fallar según el navegador.
+        // Se mantiene una dirección mínima con coordenadas para no bloquear el flujo.
+      }
+
+      if (!mounted) return;
       setState(() {
         direccionCtrl.text = direccion;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ubicación obtenida correctamente")),
+      );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("No se pudo obtener la ubicación: $e")),
       );
@@ -288,8 +337,8 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    child: const Text("Crear incidencia"),
                     onPressed: _crearIncidencia,
+                    child: const Text("Crear incidencia"),
                   ),
                 ),
               ],

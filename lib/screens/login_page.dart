@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'register_page.dart';
 import 'role_gate.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final passCtrl = TextEditingController();
   final auth = AuthService();
   String? errorMsg;
+  bool isGoogleLoading = false;
 
   Future<void> _loginEmail() async {
     final email = emailCtrl.text.trim();
@@ -38,20 +40,29 @@ class _LoginPageState extends State<LoginPage> {
 
   // Método para iniciar sesión con Google, utilizando el servicio de autenticación. Si ocurre un error, se muestra un mensaje; si el inicio de sesión es exitoso, se navega a la página RoleGate para redirigir según el rol del usuario.
   Future<void> _loginGoogle() async {
+    if (isGoogleLoading) return;
+
+    setState(() {
+      isGoogleLoading = true;
+      errorMsg = null;
+    });
+
     final result = await auth.signInWithGoogle();
 
-    if (result != null) {
+    if (result != null && mounted) {
       setState(() => errorMsg = result);
+    }
+
+    if (mounted) {
+      setState(() => isGoogleLoading = false);
+    }
+
+    if (result != null) {
       return;
     }
 
-    if (!mounted) return;
-
-    // LOGIN OK, RoleGate decide destino según rol
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const RoleGate()),
-    );
+    // En OAuth, la navegación la resuelve el stream de sesión en main.dart
+    // cuando Supabase termina de establecer la sesión tras el callback.
   }
 
   // Método build para mostrar la interfaz de inicio de sesión,
@@ -176,14 +187,41 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordPage(),
+                              ),
+                            );
+                          },
+                          child: const Text('¿Olvidaste tu contraseña?'),
+                        ),
+                      ),
+
                       const SizedBox(height: 20),
 
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          icon: Image.asset("assets/google.png", height: 24),
-                          label: const Text("Iniciar sesión con Google"),
-                          onPressed: _loginGoogle,
+                          icon: isGoogleLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Image.asset("assets/google.png", height: 24),
+                          label: Text(
+                            isGoogleLoading
+                                ? "Abriendo Google..."
+                                : "Iniciar sesión con Google",
+                          ),
+                          onPressed: isGoogleLoading ? null : _loginGoogle,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: const BorderSide(color: Colors.black54),

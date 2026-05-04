@@ -4,10 +4,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/app_scaffold.dart';
+import '../models/incident_comment.dart';
 import '../models/incident.dart';
 import 'edit_incident_page.dart';
 import '../services/incident_service.dart';
-import '../widgets/back_fab.dart';
 import '../widgets/status_badge.dart';
 
 // PÁGINA DE DETALLE DE INCIDENCIA (ACCESIBLE DESDE LIST_INCIDENT_PAGE Y ADMIN_INCIDENT_LIST_PAGE)
@@ -280,6 +280,10 @@ class IncidentDetailPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       _buildActionButtons(context, inc),
+
+                      const SizedBox(height: 24),
+
+                      _CommentsSection(incidentId: inc.id, isAdmin: isAdmin),
                     ],
                   ),
                 ),
@@ -289,7 +293,15 @@ class IncidentDetailPage extends StatelessWidget {
         ),
 
         // BOTÓN FLOTANTE ABAJO A LA IZQUIERDA
-        const Positioned(bottom: 20, left: 20, child: BackFAB()),
+        Positioned(
+          bottom: 20,
+          left: 20,
+          child: FloatingActionButton(
+            backgroundColor: Colors.blue,
+            child: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ),
       ],
     );
   }
@@ -544,5 +556,232 @@ class IncidentDetailPage extends StatelessWidget {
     } else {
       return "${fecha.day}/${fecha.month}/${fecha.year}";
     }
+  }
+}
+
+class _CommentsSection extends StatefulWidget {
+  final String incidentId;
+  final bool isAdmin;
+
+  const _CommentsSection({required this.incidentId, required this.isAdmin});
+
+  @override
+  State<_CommentsSection> createState() => _CommentsSectionState();
+}
+
+class _CommentsSectionState extends State<_CommentsSection> {
+  final IncidentService _incidentService = IncidentService();
+  final TextEditingController _commentCtrl = TextEditingController();
+  bool _loading = true;
+  bool _sending = false;
+  List<IncidentComment> _comments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  @override
+  void dispose() {
+    _commentCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadComments() async {
+    final comments = await _incidentService.getIncidentComments(
+      widget.incidentId,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _comments = comments;
+      _loading = false;
+    });
+  }
+
+  Future<void> _sendComment() async {
+    final text = _commentCtrl.text.trim();
+    if (text.isEmpty || _sending) return;
+
+    setState(() {
+      _sending = true;
+    });
+
+    try {
+      await _incidentService.addIncidentComment(
+        incidentId: widget.incidentId,
+        message: text,
+      );
+      _commentCtrl.clear();
+      await _loadComments();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo enviar el comentario')),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+      });
+    }
+  }
+
+  String _formatCreatedAt(DateTime value) {
+    final date = value.toLocal();
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    return '$day/$month/$year $hour:$minute';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Comentarios',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3436),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else if (_comments.isEmpty)
+            Text(
+              'Aun no hay comentarios en esta incidencia.',
+              style: TextStyle(color: Colors.grey.shade700),
+            )
+          else
+            Column(
+              children: _comments.map((comment) {
+                final isAdminComment = comment.authorRole == 'admin';
+
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isAdminComment
+                        ? Colors.blue.shade50
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              comment.authorName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2D3436),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isAdminComment
+                                  ? Colors.blue.shade700
+                                  : Colors.grey.shade600,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              isAdminComment ? 'Admin' : 'Usuario',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(comment.message),
+                      const SizedBox(height: 6),
+                      Text(
+                        _formatCreatedAt(comment.createdAt),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commentCtrl,
+                  minLines: 1,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Escribe un comentario',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
+                onPressed: _sending ? null : _sendComment,
+                icon: _sending
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send),
+                label: const Text('Enviar'),
+              ),
+            ],
+          ),
+
+          if (widget.isAdmin) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Tus comentarios aparecerán identificados como administrador.',
+              style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade600),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

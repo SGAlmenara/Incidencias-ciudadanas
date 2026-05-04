@@ -245,7 +245,7 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
             const SizedBox(height: 10),
 
             DropdownButtonFormField<String>(
-              value: estado,
+              initialValue: estado,
               decoration: const InputDecoration(labelText: "Estado"),
               items: const [
                 DropdownMenuItem(value: "pendiente", child: Text("Pendiente")),
