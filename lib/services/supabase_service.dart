@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/incident.dart';
 
+// Servicio simple para lecturas directas de incidencias desde Supabase.
 class SupabaseService {
   final supabase = Supabase.instance.client;
 

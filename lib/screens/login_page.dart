@@ -4,6 +4,7 @@ import 'register_page.dart';
 import 'role_gate.dart';
 import 'forgot_password_page.dart';
 
+// Pantalla de autenticacion principal con email/password y Google.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -71,6 +72,9 @@ class _LoginPageState extends State<LoginPage> {
   //También incluye un enlace para registrarse si no se tiene una cuenta.
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isCompactHeight = screenHeight < 760;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
 
@@ -79,7 +83,10 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             // HEADER
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: isCompactHeight ? 14 : 20,
+              ),
               child: Row(
                 children: [
                   Image.asset(
@@ -114,148 +121,179 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: isCompactHeight ? 8 : 20),
 
             // CARD CENTRADA
             Expanded(
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(32),
-                  width: 400,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: const [
-                      BoxShadow(
-                        blurRadius: 12,
-                        color: Colors.black12,
-                        offset: Offset(0, 4),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "Iniciar sesión",
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF003366),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      if (errorMsg != null)
-                        Text(
-                          errorMsg!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-
-                      TextField(
-                        controller: emailCtrl,
-                        decoration: const InputDecoration(
-                          labelText: "Correo electrónico",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      TextField(
-                        controller: passCtrl,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: "Contraseña",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _loginEmail,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF003366),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text("Entrar"),
-                        ),
-                      ),
-
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ForgotPasswordPage(),
-                              ),
-                            );
-                          },
-                          child: const Text('¿Olvidaste tu contraseña?'),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          icon: isGoogleLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Image.asset("assets/google.png", height: 24),
-                          label: Text(
-                            isGoogleLoading
-                                ? "Abriendo Google..."
-                                : "Iniciar sesión con Google",
-                          ),
-                          onPressed: isGoogleLoading ? null : _loginGoogle,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(color: Colors.black54),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterPage(),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 400),
+                          child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(isCompactHeight ? 22 : 32),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: const [
+                                BoxShadow(
+                                  blurRadius: 12,
+                                  color: Colors.black12,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                        child: const Text("¿No tienes cuenta? Regístrate"),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  "Iniciar sesión",
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF003366),
+                                  ),
+                                ),
+
+                                SizedBox(height: isCompactHeight ? 14 : 20),
+
+                                if (errorMsg != null)
+                                  Text(
+                                    errorMsg!,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+
+                                TextField(
+                                  controller: emailCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: "Correo electrónico",
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+
+                                SizedBox(height: isCompactHeight ? 14 : 20),
+
+                                TextField(
+                                  controller: passCtrl,
+                                  obscureText: true,
+                                  decoration: const InputDecoration(
+                                    labelText: "Contraseña",
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+
+                                SizedBox(height: isCompactHeight ? 14 : 20),
+
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _loginEmail,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF003366),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                    ),
+                                    child: const Text("Entrar"),
+                                  ),
+                                ),
+
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ForgotPasswordPage(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      '¿Olvidaste tu contraseña?',
+                                    ),
+                                  ),
+                                ),
+
+                                SizedBox(height: isCompactHeight ? 14 : 20),
+
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    icon: isGoogleLoading
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : Image.asset(
+                                            "assets/google.png",
+                                            height: 24,
+                                          ),
+                                    label: Text(
+                                      isGoogleLoading
+                                          ? "Abriendo Google..."
+                                          : "Iniciar sesión con Google",
+                                    ),
+                                    onPressed: isGoogleLoading
+                                        ? null
+                                        : _loginGoogle,
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      side: const BorderSide(
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                SizedBox(height: isCompactHeight ? 14 : 20),
+
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const RegisterPage(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    "¿No tienes cuenta? Regístrate",
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
 
             // FOOTER
             Padding(
-              padding: const EdgeInsets.only(bottom: 24),
+              padding: EdgeInsets.only(bottom: isCompactHeight ? 14 : 24),
               child: Text(
                 "Copyright © 2026 Ayuntamiento de Cantillana",
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: 11,
+                  fontSize: isCompactHeight ? 10 : 11,
                   fontWeight: FontWeight.w500,
                 ),
               ),

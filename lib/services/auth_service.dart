@@ -4,6 +4,23 @@ import 'package:flutter/foundation.dart';
 class AuthService {
   final supabase = Supabase.instance.client;
 
+  Future<bool> isEmailBlocked(String email) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty) return false;
+
+    try {
+      final blocked = await supabase
+          .from('blocked_emails')
+          .select('email')
+          .eq('email', normalizedEmail)
+          .maybeSingle();
+      return blocked != null;
+    } catch (e) {
+      debugPrint('isEmailBlocked error: $e');
+      return false;
+    }
+  }
+
   Future<void> ensureCurrentUserProfile({
     String? nombre,
     String? apellidos,
@@ -46,6 +63,7 @@ class AuthService {
       metadata['apellidos']?.toString(),
       existing?['apellidos']?.toString(),
     ]);
+    final safeLastName = lastName.isNotEmpty ? lastName : 'Sin apellido';
 
     final phone = firstNonEmpty([
       telefono,
@@ -54,10 +72,13 @@ class AuthService {
       existing?['telefono']?.toString(),
     ]);
 
-    final payload = <String, dynamic>{'id': user.id};
+    final payload = <String, dynamic>{
+      'id': user.id,
+      // Keep required profile fields non-null when creating missing rows.
+      'nombre': firstName.isNotEmpty ? firstName : 'Usuario',
+      'apellidos': safeLastName,
+    };
     if (normalizedEmail.isNotEmpty) payload['email'] = normalizedEmail;
-    if (firstName.isNotEmpty) payload['nombre'] = firstName;
-    if (lastName.isNotEmpty) payload['apellidos'] = lastName;
     if (phone.isNotEmpty) payload['telefono'] = phone;
 
     await supabase.from('profiles').upsert(payload);
@@ -80,6 +101,11 @@ class AuthService {
   }) async {
     try {
       final normalizedEmail = email.trim().toLowerCase();
+
+      final blocked = await isEmailBlocked(normalizedEmail);
+      if (blocked) {
+        return 'Este correo esta bloqueado y no puede volver a registrarse.';
+      }
 
       final response = await supabase.auth.signUp(
         email: normalizedEmail,
@@ -186,6 +212,7 @@ class AuthService {
         .eq('id', userId)
         .maybeSingle();
 
-    return data != null && data['role'] == 'admin';
+    final role = (data?['role'] ?? 'user').toString().trim().toLowerCase();
+    return role == 'admin';
   }
 }

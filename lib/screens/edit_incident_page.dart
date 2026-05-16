@@ -20,6 +20,21 @@ class EditIncidentPage extends StatefulWidget {
 }
 
 class _EditIncidentPageState extends State<EditIncidentPage> {
+  static const List<String> _sectoresDisponibles = [
+    'Alumbrado',
+    'Inmobiliario Urbano',
+    'Aceras',
+    'Carretera',
+    'Edificios',
+    'Parques',
+    'Limpieza viaria',
+    'Señalización y tráfico',
+    'Jardinería y zonas verdes',
+    'Otros',
+  ];
+
+  final _picker = ImagePicker();
+
   late TextEditingController tituloCtrl;
   late TextEditingController descripcionCtrl;
   late TextEditingController latCtrl;
@@ -27,6 +42,7 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
   late TextEditingController calleCtrl;
 
   late String estado;
+  String? sectorSeleccionado;
 
   bool isAdmin = false;
   bool loadingRole = true;
@@ -34,6 +50,17 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
   List<String> nuevasImagenes = [];
   List<String> imagenesExistentes = [];
   static const int maxFotos = 3;
+
+  bool _hayEspacioParaMasFotos() {
+    final totalActual = imagenesExistentes.length + nuevasImagenes.length;
+    if (totalActual >= maxFotos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Máximo 3 fotos por incidencia")),
+      );
+      return false;
+    }
+    return true;
+  }
 
   // Método para cargar el rol del usuario al iniciar la página,
   // verificando si es administrador o no para mostrar u ocultar ciertas opciones de edición.
@@ -53,6 +80,8 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
     );
     calleCtrl = TextEditingController(text: widget.incident['direccion'] ?? "");
     estado = widget.incident['estado'];
+    final sectorInicial = (widget.incident['sector'] ?? '').toString().trim();
+    sectorSeleccionado = sectorInicial.isNotEmpty ? sectorInicial : null;
 
     imagenesExistentes =
         (widget.incident['img_url'] as List?)?.cast<String>() ?? [];
@@ -98,17 +127,12 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
 
   // Seleccionar varias imágenes con límite
   Future<void> _pickImages() async {
+    if (!_hayEspacioParaMasFotos()) return;
+
     final totalActual = imagenesExistentes.length + nuevasImagenes.length;
 
-    if (totalActual >= maxFotos) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Máximo 3 fotos por incidencia")),
-      );
-      return;
-    }
-
-    final picker = ImagePicker();
-    final files = await picker.pickMultiImage();
+    final files = await _picker.pickMultiImage();
+    if (!mounted) return;
 
     if (files.isNotEmpty) {
       if (totalActual + files.length > maxFotos) {
@@ -124,6 +148,62 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
       }
       setState(() {});
     }
+  }
+
+  Future<void> _takePhotoFromCamera() async {
+    if (!_hayEspacioParaMasFotos()) return;
+
+    try {
+      final file = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 75,
+      );
+
+      if (file == null) return;
+
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        nuevasImagenes.add(base64Encode(bytes));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("No se pudo abrir la cámara: $e")));
+    }
+  }
+
+  Future<void> _mostrarOpcionesImagen() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Cámara'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _takePhotoFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Galería'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _pickImages();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // Abrir buscador de direcciones
@@ -178,6 +258,13 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
       return;
     }
 
+    if (sectorSeleccionado == null || sectorSeleccionado!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Debes seleccionar un sector")),
+      );
+      return;
+    }
+
     try {
       ScaffoldMessenger.of(
         context,
@@ -195,8 +282,11 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
         lat: lat,
         lng: lng,
         direccion: calleCtrl.text,
+        sector: sectorSeleccionado!,
         imagenes: imagenesFinales,
       );
+
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -207,6 +297,7 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
 
       Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Error al guardar: $e")));
@@ -219,7 +310,11 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
   @override
   Widget build(BuildContext context) {
     if (loadingRole) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return AppScaffold(
+        title: 'Editar incidencia',
+        isAdmin: isAdmin,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     final todasLasImagenes = [...imagenesExistentes, ...nuevasImagenes];
@@ -228,25 +323,34 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
       title: "Editar incidencia",
       isAdmin: isAdmin,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             TextField(
               controller: tituloCtrl,
-              decoration: const InputDecoration(labelText: "Título"),
+              decoration: const InputDecoration(
+                labelText: "Título",
+                border: OutlineInputBorder(),
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             TextField(
               controller: descripcionCtrl,
-              decoration: const InputDecoration(labelText: "Descripción"),
+              decoration: const InputDecoration(
+                labelText: "Descripción",
+                border: OutlineInputBorder(),
+              ),
               maxLines: 3,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
               initialValue: estado,
-              decoration: const InputDecoration(labelText: "Estado"),
+              decoration: const InputDecoration(
+                labelText: "Estado",
+                border: OutlineInputBorder(),
+              ),
               items: const [
                 DropdownMenuItem(value: "pendiente", child: Text("Pendiente")),
                 DropdownMenuItem(
@@ -257,15 +361,41 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
               ],
               onChanged: isAdmin ? (v) => setState(() => estado = v!) : null,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
 
             TextField(
               controller: calleCtrl,
               readOnly: true,
-              decoration: const InputDecoration(labelText: "Dirección"),
+              decoration: const InputDecoration(
+                labelText: "Dirección",
+                border: OutlineInputBorder(),
+              ),
               onTap: _abrirBuscadorDireccion,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
+
+            DropdownButtonFormField<String>(
+              initialValue: sectorSeleccionado,
+              decoration: const InputDecoration(
+                labelText: "Sector *",
+                border: OutlineInputBorder(),
+              ),
+              isExpanded: true,
+              items: _sectoresDisponibles
+                  .map(
+                    (sector) => DropdownMenuItem<String>(
+                      value: sector,
+                      child: Text(sector),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  sectorSeleccionado = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
 
             Row(
               children: [
@@ -273,7 +403,10 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
                   child: TextField(
                     controller: latCtrl,
                     readOnly: true,
-                    decoration: const InputDecoration(labelText: "Latitud"),
+                    decoration: const InputDecoration(
+                      labelText: "Latitud",
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -281,7 +414,10 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
                   child: TextField(
                     controller: lngCtrl,
                     readOnly: true,
-                    decoration: const InputDecoration(labelText: "Longitud"),
+                    decoration: const InputDecoration(
+                      labelText: "Longitud",
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ),
               ],
@@ -291,10 +427,14 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
 
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _pickImages,
-                icon: const Icon(Icons.image),
-                label: const Text("Agregar fotos"),
+              child: ElevatedButton.icon(
+                onPressed: _mostrarOpcionesImagen,
+                icon: const Icon(Icons.add_a_photo_outlined),
+                label: const Text("Agregar Imagen"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
 
@@ -382,7 +522,12 @@ class _EditIncidentPageState extends State<EditIncidentPage> {
             ElevatedButton(
               onPressed: _guardarCambios,
               style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text("Editar incidencia"),
             ),

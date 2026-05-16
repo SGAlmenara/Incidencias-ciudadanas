@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/app_scaffold.dart';
@@ -13,6 +16,7 @@ class ProfileSettingsPage extends StatefulWidget {
 
 class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   final supabase = Supabase.instance.client;
+  final _imagePicker = ImagePicker();
 
   final nombreCtrl = TextEditingController();
   final apellidosCtrl = TextEditingController();
@@ -29,11 +33,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   bool _obscureActual = true;
   bool _obscureNueva = true;
   bool _obscureConfirm = true;
+  bool _removeAvatar = false;
 
   String? _profileError;
   String? _profileSuccess;
   String? _passwordError;
   String? _passwordSuccess;
+  String? _avatarUrl;
+  Uint8List? _pendingAvatarBytes;
 
   @override
   void initState() {
@@ -59,6 +66,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         .toString()
         .trim();
     direccionCtrl.text = (metadata['direccion'] ?? '').toString().trim();
+    final avatarFromMetadata = (metadata['avatar_url'] ?? '').toString().trim();
+    _avatarUrl = avatarFromMetadata.isNotEmpty ? avatarFromMetadata : null;
 
     try {
       final data = await supabase
@@ -85,6 +94,40 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     if (mounted) setState(() => _loading = false);
   }
 
+  Future<void> _pickAvatar() async {
+    try {
+      final file = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 75,
+        maxWidth: 720,
+      );
+      if (file == null) return;
+
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        _pendingAvatarBytes = bytes;
+        _removeAvatar = false;
+        _profileSuccess = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _profileError = 'No se pudo seleccionar la imagen: $e';
+      });
+    }
+  }
+
+  void _removeSelectedAvatar() {
+    setState(() {
+      _pendingAvatarBytes = null;
+      _avatarUrl = null;
+      _removeAvatar = true;
+      _profileSuccess = null;
+    });
+  }
+
   Future<void> _saveProfile() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -96,6 +139,53 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     });
 
     try {
+      final userMetadata = Map<String, dynamic>.from(
+        user.userMetadata ?? const <String, dynamic>{},
+      );
+      String? finalAvatarUrl = _avatarUrl;
+
+      if (_pendingAvatarBytes != null) {
+        final oldAvatarPath = (userMetadata['avatar_path'] ?? '')
+            .toString()
+            .trim();
+        final avatarPath =
+            '${user.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+        await supabase.storage
+            .from('avatars')
+            .uploadBinary(
+              avatarPath,
+              _pendingAvatarBytes!,
+              fileOptions: const FileOptions(
+                cacheControl: '3600',
+                upsert: true,
+                contentType: 'image/jpeg',
+              ),
+            );
+
+        finalAvatarUrl = supabase.storage
+            .from('avatars')
+            .getPublicUrl(avatarPath);
+
+        userMetadata['avatar_path'] = avatarPath;
+        userMetadata['avatar_url'] = finalAvatarUrl;
+
+        if (oldAvatarPath.isNotEmpty && oldAvatarPath != avatarPath) {
+          await supabase.storage.from('avatars').remove([oldAvatarPath]);
+        }
+      } else if (_removeAvatar) {
+        final oldAvatarPath = (userMetadata['avatar_path'] ?? '')
+            .toString()
+            .trim();
+        userMetadata.remove('avatar_path');
+        userMetadata.remove('avatar_url');
+        finalAvatarUrl = null;
+
+        if (oldAvatarPath.isNotEmpty) {
+          await supabase.storage.from('avatars').remove([oldAvatarPath]);
+        }
+      }
+
       final payload = {
         'nombre': nombreCtrl.text.trim(),
         'apellidos': apellidosCtrl.text.trim(),
@@ -120,8 +210,15 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         });
       }
 
+      if (_pendingAvatarBytes != null || _removeAvatar) {
+        await supabase.auth.updateUser(UserAttributes(data: userMetadata));
+      }
+
       if (!mounted) return;
       setState(() {
+        _avatarUrl = finalAvatarUrl;
+        _pendingAvatarBytes = null;
+        _removeAvatar = false;
         _profileSuccess = 'Datos actualizados correctamente.';
         _savingProfile = false;
       });
@@ -236,6 +333,56 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
+                          color: Color(0xFF2D3436),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      Center(
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 46,
+                              backgroundColor: Colors.blue.shade50,
+                              backgroundImage: _pendingAvatarBytes != null
+                                  ? MemoryImage(_pendingAvatarBytes!)
+                                  : (_avatarUrl != null
+                                        ? NetworkImage(_avatarUrl!)
+                                        : null),
+                              child:
+                                  _pendingAvatarBytes == null &&
+                                      _avatarUrl == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: Colors.blueGrey,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: _savingProfile
+                                      ? null
+                                      : _pickAvatar,
+                                  icon: const Icon(Icons.photo_camera_outlined),
+                                  label: const Text('Cambiar imagen'),
+                                ),
+                                if (_pendingAvatarBytes != null ||
+                                    _avatarUrl != null)
+                                  TextButton.icon(
+                                    onPressed: _savingProfile
+                                        ? null
+                                        : _removeSelectedAvatar,
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: const Text('Quitar'),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),

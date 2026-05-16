@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Badge reutilizable para mostrar estado de incidencias con color e icono.
 class StatusBadge extends StatelessWidget {
   final String estado;
   final double fontSize;

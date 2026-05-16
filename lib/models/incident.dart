@@ -6,6 +6,7 @@ class Incident {
   final double? latitud;
   final double? longitud;
   final String? direccion;
+  final String? sector;
   final String estado;
   final DateTime fecha;
   final String userId;
@@ -21,6 +22,7 @@ class Incident {
     this.latitud,
     this.longitud,
     this.direccion,
+    this.sector,
   });
 
   // FACTORY: convertir desde Supabase
@@ -33,6 +35,7 @@ class Incident {
       latitud: map['latitud']?.toDouble(),
       longitud: map['longitud']?.toDouble(),
       direccion: map['direccion'],
+      sector: map['sector'],
       estado: map['estado'],
       fecha: DateTime.parse(map['fecha']),
       userId: map['user_id'],
@@ -49,6 +52,7 @@ class Incident {
       'latitud': latitud,
       'longitud': longitud,
       'direccion': direccion,
+      'sector': sector,
       'estado': estado,
       'fecha': fecha.toIso8601String(),
       'user_id': userId,
@@ -75,6 +79,7 @@ class Incident {
     double? latitud,
     double? longitud,
     String? direccion,
+    String? sector,
     String? estado,
   }) {
     return Incident(
@@ -88,6 +93,7 @@ class Incident {
       latitud: latitud ?? this.latitud,
       longitud: longitud ?? this.longitud,
       direccion: direccion ?? this.direccion,
+      sector: sector ?? this.sector,
     );
   }
 }

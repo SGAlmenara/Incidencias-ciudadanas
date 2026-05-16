@@ -9,6 +9,7 @@ import '../widgets/app_scaffold.dart';
 
 enum AdminSortOption {
   fechaDesc,
+  fechaAsc,
   direccionAsc,
   direccionDesc,
   estadoAsc,
@@ -25,6 +26,20 @@ class AdminIncidentListPage extends StatefulWidget {
 }
 
 class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
+  static const List<String> _sectoresDisponibles = [
+    'todos',
+    'Alumbrado',
+    'Inmobiliario Urbano',
+    'Aceras',
+    'Carretera',
+    'Edificios',
+    'Parques',
+    'Limpieza viaria',
+    'Señalización y tráfico',
+    'Jardinería y zonas verdes',
+    'Otros',
+  ];
+
   bool loading = true;
   List<Incident> incidents = [];
   Map<String, String> latestCommentsByIncidentId = {};
@@ -32,8 +47,10 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
   Map<String, String> reporterNameByUserId = {};
   final Set<String> updatingStatusIds = <String>{};
   String filtroEstado = "todos";
+  String filtroSector = "todos";
   AdminSortOption sortOption = AdminSortOption.fechaDesc;
   final incidentService = IncidentService();
+  Map<String, int> sectorCountMap = {};
 
   @override
   void initState() {
@@ -46,25 +63,29 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     final supabase = Supabase.instance.client;
 
     try {
-      dynamic data;
-
-      if (filtroEstado == "todos") {
-        data = await supabase
-            .from('incidencias')
-            .select('*')
-            .order('fecha', ascending: false);
-      } else {
-        data = await supabase
-            .from('incidencias')
-            .select('*')
-            .eq('estado', filtroEstado)
-            .order('fecha', ascending: false);
+      // Primero aplico filtros en SQL para no traer datos de mas.
+      var query = supabase.from('incidencias').select('*');
+      if (filtroEstado != 'todos') {
+        query = query.eq('estado', filtroEstado);
       }
+      if (filtroSector != 'todos') {
+        query = query.eq('sector', filtroSector);
+      }
+
+      final ascending = sortOption == AdminSortOption.fechaAsc;
+      final data = await query.order('fecha', ascending: ascending);
 
       final loaded = (data as List)
           .map((map) => Incident.fromMap(map))
           .toList();
       _sortIncidents(loaded);
+
+      final countMap = <String, int>{};
+      // Este contador se usa para mostrar (cantidad) junto al sector.
+      for (final inc in loaded) {
+        final sector = (inc.sector ?? 'Otros').trim();
+        countMap[sector] = (countMap[sector] ?? 0) + 1;
+      }
 
       final userIds = loaded
           .map((incident) => incident.userId)
@@ -72,27 +93,32 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
           .toList();
       final reporterMap = <String, String>{};
       if (userIds.isNotEmpty) {
-        final profileRows = await supabase
-            .from('profiles')
-            .select('id, nombre, apellidos, email')
-            .inFilter('id', userIds);
+        try {
+          final profileRows = await supabase
+              .from('profiles')
+              .select('id, nombre, apellidos, email')
+              .inFilter('id', userIds);
 
-        for (final row in (profileRows as List).cast<Map<String, dynamic>>()) {
-          final userId = (row['id'] ?? '').toString();
-          if (userId.isEmpty) continue;
+          for (final row
+              in (profileRows as List).cast<Map<String, dynamic>>()) {
+            final userId = (row['id'] ?? '').toString();
+            if (userId.isEmpty) continue;
 
-          final nombre = (row['nombre'] ?? '').toString().trim();
-          final apellidos = (row['apellidos'] ?? '').toString().trim();
-          final email = (row['email'] ?? '').toString().trim();
-          final fullName = [
-            nombre,
-            apellidos,
-          ].where((part) => part.isNotEmpty).join(' ').trim();
+            final nombre = (row['nombre'] ?? '').toString().trim();
+            final apellidos = (row['apellidos'] ?? '').toString().trim();
+            final email = (row['email'] ?? '').toString().trim();
+            final fullName = [
+              nombre,
+              apellidos,
+            ].where((part) => part.isNotEmpty).join(' ').trim();
 
-          final displayName = fullName.isNotEmpty
-              ? fullName
-              : (email.isNotEmpty ? email : 'Usuario');
-          reporterMap[userId] = displayName;
+            final displayName = fullName.isNotEmpty
+                ? fullName
+                : (email.isNotEmpty ? email : 'Usuario');
+            reporterMap[userId] = displayName;
+          }
+        } catch (e) {
+          print('Error cargando perfiles: $e');
         }
       }
 
@@ -109,6 +135,7 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
         latestCommentsByIncidentId = latestComments;
         commentCountByIncidentId = commentCounts;
         reporterNameByUserId = reporterMap;
+        sectorCountMap = countMap;
         loading = false;
       });
     } catch (e) {
@@ -154,6 +181,11 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
             (i) => i.id == incident.id && i.estado != filtroEstado,
           );
         }
+        if (filtroSector != 'todos') {
+          incidents.removeWhere(
+            (i) => i.id == incident.id && i.sector != filtroSector,
+          );
+        }
 
         _sortIncidents(incidents);
       });
@@ -167,10 +199,11 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
         SnackBar(content: Text('No se pudo actualizar estado: $e')),
       );
     } finally {
-      if (!mounted) return;
-      setState(() {
-        updatingStatusIds.remove(incident.id);
-      });
+      if (mounted) {
+        setState(() {
+          updatingStatusIds.remove(incident.id);
+        });
+      }
     }
   }
 
@@ -193,6 +226,9 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     switch (sortOption) {
       case AdminSortOption.fechaDesc:
         list.sort((a, b) => b.fecha.compareTo(a.fecha));
+        break;
+      case AdminSortOption.fechaAsc:
+        list.sort((a, b) => a.fecha.compareTo(b.fecha));
         break;
       case AdminSortOption.direccionAsc:
         list.sort(
@@ -227,18 +263,16 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar incidencia'),
-        content: Text(
-          'Se eliminara la incidencia "${incident.titulo ?? 'Sin titulo'}". Esta accion no se puede deshacer.',
-        ),
+        content: const Text('Esta seguro de eliminar?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: const Text('No'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar'),
+            child: const Text('Si'),
           ),
         ],
       ),
@@ -267,18 +301,15 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
 
   // MÉTODO PARA OBTENER LA ETIQUETA DE LOS CRITERIOS DE ORDENACIÓN
   String _sortLabel(AdminSortOption option) {
-    switch (option) {
-      case AdminSortOption.fechaDesc:
-        return 'Fecha (mas reciente)';
-      case AdminSortOption.direccionAsc:
-        return 'Direccion (A-Z)';
-      case AdminSortOption.direccionDesc:
-        return 'Direccion (Z-A)';
-      case AdminSortOption.estadoAsc:
-        return 'Estado (Pendiente->Resuelta)';
-      case AdminSortOption.estadoDesc:
-        return 'Estado (Resuelta->Pendiente)';
-    }
+    const labels = <AdminSortOption, String>{
+      AdminSortOption.fechaDesc: 'Fecha (mas reciente)',
+      AdminSortOption.fechaAsc: 'Fecha (mas antigua)',
+      AdminSortOption.direccionAsc: 'Direccion (A-Z)',
+      AdminSortOption.direccionDesc: 'Direccion (Z-A)',
+      AdminSortOption.estadoAsc: 'Estado (Pendiente->Resuelta)',
+      AdminSortOption.estadoDesc: 'Estado (Resuelta->Pendiente)',
+    };
+    return labels[option] ?? 'Orden';
   }
 
   // MÉTODO PARA OBTENER LA ETIQUETA DE LOS ESTADOS
@@ -295,33 +326,76 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
     }
   }
 
-  // MÉTODO PARA CONSTRUIR LOS CHIPS DE FILTRO DE ESTADO
-  Widget _buildFiltroChip(String estado, String label, Color color) {
-    final activo = filtroEstado == estado;
-
-    return ChoiceChip(
-      label: Text(label),
-      selected: activo,
-      selectedColor: color.withValues(alpha: 0.2),
-      onSelected: (_) {
-        setState(() {
-          filtroEstado = estado;
-          loading = true;
-        });
-        _loadIncidents();
-      },
-    );
-  }
-
   // MÉTODO BUILD PARA MOSTRAR LA INTERFAZ DE LISTADO DE INCIDENCIAS CON FILTROS,
   //OPCIONES DE ORDENACIÓN, Y BOTONES DE EDICIÓN Y ELIMINACIÓN
   @override
   Widget build(BuildContext context) {
+    final totalIncidents = incidents.length;
+    final pendientes = incidents.where((i) => i.estado == 'pendiente').length;
+    final enProceso = incidents.where((i) => i.estado == 'en_proceso').length;
+    final resueltas = incidents.where((i) => i.estado == 'resuelta').length;
+
+    Widget statTile(String label, String value, Color color) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+                color: Color(0xFF1D2D44),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: Color(0xFF415A77),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return AppScaffold(
       isAdmin: true,
       title: "Incidencias (Admin)",
       body: Column(
         children: [
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEAF2FF), Color(0xFFF5F9FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFD8E5FA)),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                statTile('Total', '$totalIncidents', const Color(0xFFDDEBFF)),
+                statTile('Pendientes', '$pendientes', const Color(0xFFFFF2CC)),
+                statTile('En proceso', '$enProceso', const Color(0xFFE2F4FF)),
+                statTile('Resueltas', '$resueltas', const Color(0xFFE8F8EC)),
+              ],
+            ),
+          ),
           const SizedBox(height: 10),
 
           Padding(
@@ -331,8 +405,8 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD7DFEA)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<AdminSortOption>(
@@ -361,19 +435,88 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
 
           const SizedBox(height: 10),
 
-          // FILTROS DE ESTADO
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD7DFEA)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: filtroSector,
+                  isExpanded: true,
+                  icon: const Icon(Icons.category_outlined),
+                  items: _sectoresDisponibles.map((sector) {
+                    final label = sector == 'todos'
+                        ? 'Sector: Todos'
+                        : '$sector (${sectorCountMap[sector] ?? 0})';
+                    return DropdownMenuItem<String>(
+                      value: sector,
+                      child: Text(label),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      filtroSector = value;
+                      loading = true;
+                    });
+                    _loadIncidents();
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // BOTONES FILTRO ESTADO
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Wrap(
+              alignment: WrapAlignment.start,
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                _buildFiltroChip("todos", "Todas", Colors.grey),
-                const SizedBox(width: 8),
-                _buildFiltroChip("pendiente", "Pendientes", Colors.orange),
-                const SizedBox(width: 8),
-                _buildFiltroChip("en_proceso", "En proceso", Colors.blue),
-                const SizedBox(width: 8),
-                _buildFiltroChip("resuelta", "Resueltas", Colors.green),
+                for (final estado in [
+                  'todos',
+                  'pendiente',
+                  'en_proceso',
+                  'resuelta',
+                ])
+                  ChoiceChip(
+                    label: Text(
+                      estado == 'todos'
+                          ? 'Todas'
+                          : estado == 'en_proceso'
+                          ? 'En proceso'
+                          : estado == 'pendiente'
+                          ? 'Pendientes'
+                          : 'Resueltas',
+                    ),
+                    selected: filtroEstado == estado,
+                    selectedColor: const Color(0xFFDDEBFF),
+                    side: const BorderSide(color: Color(0xFFD7DFEA)),
+                    labelStyle: TextStyle(
+                      color: filtroEstado == estado
+                          ? const Color(0xFF1F3B63)
+                          : Colors.black87,
+                      fontWeight: filtroEstado == estado
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                    onSelected: (_) {
+                      setState(() {
+                        filtroEstado = estado;
+                        loading = true;
+                      });
+                      _loadIncidents();
+                    },
+                  ),
               ],
             ),
           ),
@@ -399,7 +542,6 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                         children: [
                           IncidentCard(
                             incident: inc,
-                            isAlternate: index.isEven,
                             reporterName: reporterNameByUserId[inc.userId],
                             latestComment: latestCommentsByIncidentId[inc.id],
                             commentCount: commentCountByIncidentId[inc.id] ?? 0,
@@ -425,13 +567,26 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                           Positioned(
                             right: 8,
                             top: 8,
-                            child: IconButton(
-                              tooltip: 'Eliminar incidencia',
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFECEC),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: const Color(0xFFF6C9C9),
+                                ),
                               ),
-                              onPressed: () => _confirmDelete(inc),
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                tooltip: 'Eliminar incidencia',
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Color(0xFFC62828),
+                                  size: 18,
+                                ),
+                                onPressed: () => _confirmDelete(inc),
+                              ),
                             ),
                           ),
                           Positioned(
@@ -442,9 +597,11 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                                 horizontal: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.grey.shade300),
+                                color: const Color(0xFFEAF2FF),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: const Color(0xFFCFE0FF),
+                                ),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -477,6 +634,8 @@ class _AdminIncidentListPageState extends State<AdminIncidentListPage> {
                                               _estadoLabel(estado),
                                               style: const TextStyle(
                                                 fontSize: 12,
+                                                color: Color(0xFF1F3B63),
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                           )

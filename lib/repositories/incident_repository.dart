@@ -17,6 +17,7 @@ class IncidentRepository {
     required double lat,
     required double lng,
     required String direccion,
+    required String sector,
     required List<String> imagenes,
   }) async {
     return await _service.createIncident(
@@ -25,6 +26,7 @@ class IncidentRepository {
       lat,
       lng,
       direccion,
+      sector,
       imagenes,
     );
   }
@@ -53,6 +55,7 @@ class IncidentRepository {
     required double lat,
     required double lng,
     required String direccion,
+    required String sector,
     required List<String> imagenes,
   }) async {
     return await _service.updateIncident(
@@ -63,6 +66,7 @@ class IncidentRepository {
       lat: lat,
       lng: lng,
       direccion: direccion,
+      sector: sector,
       imagenes: imagenes,
     );
   }

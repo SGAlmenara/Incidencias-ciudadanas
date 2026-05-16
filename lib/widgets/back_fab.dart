@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Boton flotante de retroceso rapido para pantallas secundarias.
 class BackFAB extends StatelessWidget {
   const BackFAB({super.key});
 

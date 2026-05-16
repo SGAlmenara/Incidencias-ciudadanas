@@ -21,27 +21,47 @@ class CreateIncidentPage extends StatefulWidget {
 }
 
 class _CreateIncidentPageState extends State<CreateIncidentPage> {
+  static const List<String> _sectoresDisponibles = [
+    'Alumbrado',
+    'Inmobiliario Urbano',
+    'Aceras',
+    'Carretera',
+    'Edificios',
+    'Parques',
+    'Limpieza viaria',
+    'Señalización y tráfico',
+    'Jardinería y zonas verdes',
+    'Otros',
+  ];
+
   final tituloCtrl = TextEditingController();
   final descripcionCtrl = TextEditingController();
   final direccionCtrl = TextEditingController();
+  final _picker = ImagePicker();
 
   double? lat;
   double? lng;
+  String? sectorSeleccionado;
 
   List<String> imagenes = [];
   static const int maxFotos = 3;
 
-  // CARGAR ROL AL INICIAR PÁGINA
-  Future<void> _pickImages() async {
+  bool _hayEspacioParaMasFotos() {
     if (imagenes.length >= maxFotos) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Máximo 3 fotos por incidencia")),
       );
-      return;
+      return false;
     }
+    return true;
+  }
 
-    final picker = ImagePicker();
-    final files = await picker.pickMultiImage();
+  // CARGAR ROL AL INICIAR PÁGINA
+  Future<void> _pickImages() async {
+    if (!_hayEspacioParaMasFotos()) return;
+
+    final files = await _picker.pickMultiImage();
+    if (!mounted) return;
 
     if (files.isNotEmpty) {
       if (imagenes.length + files.length > maxFotos) {
@@ -57,6 +77,62 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
       }
       setState(() {});
     }
+  }
+
+  Future<void> _takePhotoFromCamera() async {
+    if (!_hayEspacioParaMasFotos()) return;
+
+    try {
+      final file = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 75,
+      );
+
+      if (file == null) return;
+
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        imagenes.add(base64Encode(bytes));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("No se pudo abrir la cámara: $e")));
+    }
+  }
+
+  Future<void> _mostrarOpcionesImagen() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Cámara'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _takePhotoFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Galería'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _pickImages();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // Método para abrir la página de búsqueda de direcciones usando Google Places API.
@@ -203,6 +279,13 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
       return;
     }
 
+    if (sectorSeleccionado == null || sectorSeleccionado!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Debes seleccionar un sector")),
+      );
+      return;
+    }
+
     try {
       await IncidentService().createIncident(
         tituloCtrl.text,
@@ -210,6 +293,7 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
         lat!,
         lng!,
         direccionCtrl.text,
+        sectorSeleccionado!,
         imagenes,
       );
 
@@ -279,10 +363,34 @@ class _CreateIncidentPageState extends State<CreateIncidentPage> {
 
                 const SizedBox(height: 20),
 
+                DropdownButtonFormField<String>(
+                  initialValue: sectorSeleccionado,
+                  decoration: const InputDecoration(
+                    labelText: "Sector *",
+                    border: OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  items: _sectoresDisponibles
+                      .map(
+                        (sector) => DropdownMenuItem<String>(
+                          value: sector,
+                          child: Text(sector),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      sectorSeleccionado = value;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.image),
-                  label: const Text("Agregar fotos"),
-                  onPressed: _pickImages,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text("Agregar Imagen"),
+                  onPressed: _mostrarOpcionesImagen,
                 ),
                 const SizedBox(height: 10),
 

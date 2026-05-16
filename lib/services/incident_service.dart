@@ -100,11 +100,12 @@ class IncidentService {
         final apellidos = (profile?['apellidos'] ?? '').toString().trim();
         final email = (profile?['email'] ?? '').toString().trim();
         final role = (profile?['role'] ?? 'user').toString();
+        final normalizedRole = role.trim().toLowerCase();
         final fullName = [
           nombre,
           apellidos,
         ].where((part) => part.isNotEmpty).join(' ').trim();
-        final displayName = role == 'admin'
+        final displayName = normalizedRole == 'admin'
             ? 'Admin'
             : (fullName.isNotEmpty
                   ? fullName
@@ -113,7 +114,7 @@ class IncidentService {
         return IncidentComment.fromMap(
           row,
           authorName: displayName,
-          authorRole: role,
+          authorRole: normalizedRole,
         );
       }).toList();
     } catch (e) {
@@ -154,6 +155,7 @@ class IncidentService {
     double lat,
     double lng,
     String? direccion,
+    String sector,
     List<String> imagenes,
   ) async {
     try {
@@ -167,6 +169,7 @@ class IncidentService {
             'latitud': lat,
             'longitud': lng,
             'direccion': direccion,
+            'sector': sector,
             'img_url': imagenes,
             'estado': 'pendiente',
             'user_id': userId,
@@ -240,6 +243,7 @@ class IncidentService {
     required double lat,
     required double lng,
     required String direccion,
+    required String sector,
     required List<String> imagenes,
   }) async {
     try {
@@ -252,6 +256,7 @@ class IncidentService {
             'latitud': lat,
             'longitud': lng,
             'direccion': direccion,
+            'sector': sector,
             'img_url': imagenes,
           })
           .eq('id', id)

@@ -4,6 +4,7 @@ import '/screens/user_incidents_page.dart';
 import '/screens/user_home_page.dart';
 import '/screens/admin_home_page.dart';
 import '/screens/admin_incident_list_page.dart';
+import '/screens/admin_comments_list_page.dart';
 import '/screens/create_incident_page.dart';
 import '/screens/user_comments_page.dart';
 import '/screens/user_list_page.dart';
@@ -22,7 +23,7 @@ class MainDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
+            decoration: BoxDecoration(color: Color(0xFF003366)),
             child: Text(
               "Menú",
               style: TextStyle(color: Colors.white, fontSize: 22),
@@ -133,6 +134,21 @@ class MainDrawer extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const UserListPage()),
+                );
+              },
+            ),
+
+          if (isAdmin)
+            ListTile(
+              leading: const Icon(Icons.forum_outlined),
+              title: const Text("Lista de comentarios"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminCommentsListPage(),
+                  ),
                 );
               },
             ),

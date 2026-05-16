@@ -9,6 +9,9 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrowMobile = screenWidth < 360;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: Stack(
@@ -50,45 +53,77 @@ class WelcomePage extends StatelessWidget {
               children: [
                 // 4. HEADER (lo mejoramos después)
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isNarrowMobile ? 14 : 24,
+                    vertical: isNarrowMobile ? 14 : 20,
                   ),
-                  child: Row(
-                    children: [
-                      Hero(
-                        tag: 'logo_ayto',
-                        child: Image.asset(
-                          "assets/images/Escudo_de_Cantillana.png",
-                          height: 55,
+                  child: isNarrowMobile
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Hero(
+                              tag: 'logo_ayto',
+                              child: Image.asset(
+                                "assets/images/Escudo_de_Cantillana.png",
+                                height: 44,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "AYUNTAMIENTO DE",
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.9,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const Text(
+                              "Cantillana",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF2D3436),
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Hero(
+                              tag: 'logo_ayto',
+                              child: Image.asset(
+                                "assets/images/Escudo_de_Cantillana.png",
+                                height: 55,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "AYUNTAMIENTO DE",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.2,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const Text(
+                                  "Cantillana",
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF2D3436),
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "AYUNTAMIENTO DE",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.2,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const Text(
-                            "Cantillana",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF2D3436),
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
 
                 const Spacer(),
@@ -101,75 +136,93 @@ class WelcomePage extends StatelessWidget {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(30),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                          child: Container(
-                            padding: const EdgeInsets.all(26),
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(
-                                255,
-                                201,
-                                248,
-                                217,
-                              ).withOpacity(0.38),
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.50),
-                                width: 1.3,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.topCenter,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  26,
+                                  86,
+                                  26,
+                                  26,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFC8EDD6,
+                                  ).withOpacity(0.55),
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.50),
+                                    width: 1.3,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      "Incidencias\nCiudadanas",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        color: Color(0xFF1A1A1A),
+                                        height: 1.1,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    Text(
+                                      "Tu colaboración hace un municipio mejor.",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black87,
+                                        height: 1.4,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 22),
+
+                                    _buildMainButton(context),
+                                  ],
+                                ),
                               ),
                             ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFFA8D5B5,
-                                    ).withOpacity(0.4),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.campaign_rounded,
-                                    size: 36,
-                                    color: Color(0xFFE57373),
-                                  ),
+                          ),
+                          Positioned(
+                            top: -44,
+                            child: Container(
+                              width: 128,
+                              height: 128,
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFC8EDD6),
+                                  width: 4,
                                 ),
-
-                                const SizedBox(height: 18),
-
-                                const Text(
-                                  "Incidencias\nCiudadanas",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF1A1A1A),
-                                    height: 1.1,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.18),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 10),
                                   ),
-                                ),
-
-                                const SizedBox(height: 10),
-
-                                Text(
-                                  "Tu colaboración hace un municipio mejor.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black87,
-                                    height: 1.4,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 22),
-
-                                _buildMainButton(context),
-                              ],
+                                ],
+                              ),
+                              child: Image.asset(
+                                'assets/images/c4.png',
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -179,12 +232,13 @@ class WelcomePage extends StatelessWidget {
 
                 // FOOTER
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
+                  padding: EdgeInsets.only(bottom: isNarrowMobile ? 16 : 24),
                   child: Text(
                     "Copyright © 2026 Ayuntamiento de Cantillana",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.grey[600],
-                      fontSize: 11,
+                      fontSize: isNarrowMobile ? 10 : 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

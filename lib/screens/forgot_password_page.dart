@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Pantalla para solicitar el envio del enlace de recuperacion por correo.
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -70,21 +71,27 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
       ),
       body: Center(
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          width: 400,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                blurRadius: 12,
-                color: Colors.black12,
-                offset: Offset(0, 4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 12,
+                    color: Colors.black12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
+              child: _sent ? _buildSentView() : _buildFormView(),
+            ),
           ),
-          child: _sent ? _buildSentView() : _buildFormView(),
         ),
       ),
     );
@@ -158,7 +165,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const Icon(
           Icons.mark_email_read_outlined,
           size: 56,
-          color: Colors.green,
+          color: Color(0xFF003366),
         ),
         const SizedBox(height: 16),
         const Text(

@@ -53,17 +53,15 @@ class IncidentDetailPage extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Eliminar incidencia"),
-        content: const Text(
-          "¿Seguro que deseas eliminar esta incidencia? Esta acción no se puede deshacer.",
-        ),
+        content: const Text("Esta seguro de eliminar?"),
         actions: [
           TextButton(
-            child: const Text("Cancelar"),
+            child: const Text("No"),
             onPressed: () => Navigator.pop(context, false),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text("Eliminar"),
+            child: const Text("Si"),
             onPressed: () => Navigator.pop(context, true),
           ),
         ],
@@ -216,6 +214,17 @@ class IncidentDetailPage extends StatelessWidget {
                       ),
 
                       const SizedBox(height: 16),
+
+                      if (inc.sector != null && inc.sector!.trim().isNotEmpty)
+                        _buildInfoCard(
+                          icon: Icons.category_outlined,
+                          iconColor: Colors.teal,
+                          title: "Sector",
+                          content: inc.sector!,
+                        ),
+
+                      if (inc.sector != null && inc.sector!.trim().isNotEmpty)
+                        const SizedBox(height: 16),
 
                       _buildInfoCard(
                         icon: Icons.description,
@@ -679,7 +688,8 @@ class _CommentsSectionState extends State<_CommentsSection> {
           else
             Column(
               children: _comments.map((comment) {
-                final isAdminComment = comment.authorRole == 'admin';
+                final isAdminComment =
+                    comment.authorRole.trim().toLowerCase() == 'admin';
 
                 return Container(
                   width: double.infinity,
