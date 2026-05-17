@@ -217,7 +217,7 @@ class WelcomePage extends StatelessWidget {
                                 ],
                               ),
                               child: Image.asset(
-                                'assets/images/c4.png',
+                                'assets/images/c0.png',
                                 fit: BoxFit.contain,
                               ),
                             ),
